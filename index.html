@@ -77,6 +77,24 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 .ccard h3{font-size:17px}
 .ccard p{margin:0;color:var(--muted);font-size:13px}
 .ccard.add{border-style:dashed;background:none}
+.sel{background:var(--panel);border:1px solid var(--line2);border-radius:10px;padding:8px 12px;color:var(--fg)}
+.funnel{display:grid;gap:12px}
+.fstep .lab{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:6px}
+.fstep .drop{font-size:11px;color:var(--bad);margin-left:6px}
+.fbar{height:26px;border-radius:8px;background:rgba(255,255,255,.04);border:1px solid var(--line);overflow:hidden}
+.fbar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:7px;transition:width .8s var(--ease)}
+.feed{display:grid;gap:2px;max-height:520px;overflow:auto}
+.fitem{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:8px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.fitem:last-child{border-bottom:0}
+.fitem .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;background:var(--c,var(--accent))}
+.fitem small{display:block;color:var(--dim);font-size:11px}
+.ucell{display:flex;align-items:center;gap:10px;min-width:0}
+.ucell .av{width:30px;height:30px;font-size:11px}
+.ucell b{display:block;font-weight:500;font-size:13px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ucell small{color:var(--dim);font-size:11px}
+tr.urow{cursor:pointer}
+tr.udetail td{background:rgba(0,0,0,.25)}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
 .glabel{grid-column:1/-1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
 .joinpick{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
 .joinpick input{background:rgba(0,0,0,.3);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;flex:1;min-width:0}
@@ -141,7 +159,7 @@ body.booting .top,body.booting main,body.booting .auth{visibility:hidden}
 .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;padding:3px 10px 3px 8px;border-radius:999px;border:1px solid var(--line2);background:rgba(255,255,255,.02);color:var(--fg);white-space:nowrap}
 .chip i{width:7px;height:7px;border-radius:50%;background:var(--c,var(--accent));box-shadow:0 0 8px var(--c,var(--accent))}
-.pill{font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;border:1px solid transparent}
+.pill{white-space:nowrap;font-size:12px;font-weight:500;padding:3px 10px;border-radius:999px;border:1px solid transparent}
 .pill.good{color:var(--good);background:rgba(63,214,155,.1);border-color:rgba(63,214,155,.25)} .pill.warn{color:var(--warn);background:rgba(245,189,79,.1);border-color:rgba(245,189,79,.25)} .pill.bad{color:var(--bad);background:rgba(255,107,107,.1);border-color:rgba(255,107,107,.25)} .pill.info{color:var(--accent);background:var(--accent-soft);border-color:rgba(123,140,255,.3)}
 
 /* buttons: shimmer primary */
@@ -288,6 +306,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
       <a href="#plan" data-v="plan">Plan</a>
       <a href="#quizzes" data-v="quizzes">Quizzes</a>
       <a href="#courses" data-v="courses">Courses</a>
+      <a href="#admin" data-v="admin" id="adminLink" hidden>Admin</a>
     </nav>
     <div class="who">
       <span class="sync" id="sync" data-s="idle"><i></i><span id="syncText">Connecting…</span></span>
@@ -382,6 +401,30 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
   </section>
 
   <!-- QUIZZES -->
+  <section class="view" id="v-admin" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="pagehead">
+        <div><div class="eyebrow">Admin · only you can see this</div><h1>Users &amp; activity</h1>
+          <p id="adminSub">Everyone who signed up, what they joined, and how far they got.</p></div>
+        <div class="row" style="align-items:end">
+          <label class="field" for="adminRange">Period<select id="adminRange" class="sel"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option></select></label>
+          <button class="btn" type="button" id="adminRefresh">Refresh</button>
+        </div>
+      </div>
+      <div class="notice" id="adminMsg" hidden></div>
+      <div class="kpis" id="adminKpis"></div>
+      <div class="bento">
+        <div class="panel spot b-half"><div class="phead"><h2>User funnel</h2><span class="sub">All time · share of sign-ups</span></div><div class="funnel" id="adminFunnel"></div></div>
+        <div class="panel spot b-half"><div class="phead"><h2>Daily activity</h2><span class="sub">Active users and days completed</span></div><div class="chartbox"><canvas id="cAdminDaily"></canvas></div></div>
+        <div class="panel spot b-half"><div class="phead"><h2>Sign-ups</h2><span class="sub">New accounts per day</span></div><div class="chartbox"><canvas id="cAdminSignups"></canvas></div></div>
+        <div class="panel spot b-half"><div class="phead"><h2>Quiz scores by week</h2><span class="sub" id="quizCourseSub">Average across all attempts</span></div><div class="chartbox"><canvas id="cAdminQuiz"></canvas></div></div>
+        <div class="panel spot b-full"><div class="phead"><h2>Courses</h2><span class="sub">Enrolment and progress</span></div><div style="overflow-x:auto" id="adminCourses"></div></div>
+        <div class="panel spot b-twothird"><div class="phead"><h2>Users</h2><input type="search" id="userSearch" class="sel" placeholder="Search name or email" aria-label="Search users" style="max-width:240px"></div><div style="overflow-x:auto" id="adminUsers"></div></div>
+        <div class="panel spot b-third"><div class="phead"><h2>Recent activity</h2><span class="sub">Latest 40 events</span></div><div class="feed" id="adminFeed"></div></div>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="v-courses" hidden>
     <div style="display:grid;gap:16px">
       <div class="pagehead"><div><div class="eyebrow">Your library</div><h1>Courses</h1>
@@ -455,6 +498,7 @@ function courseColor(c){return Object.values(c.areas||{})[0]||"#7b8cff"}
 function switchCourse(id){if(C&&C.id===id&&isEnrolled(id)){location.hash="#dashboard";return}if(isEnrolled(C?.id))stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
 function joinCourse(id,startDate){
   if(!canSave)return;
+  logEvent("join",id,{startDate});
   if(C&&isEnrolled(C.id))stashCourse();
   allProg.enrolled=[...new Set([...allProg.enrolled,id])];
   if(!allProg.courses[id])allProg.courses[id]={startDate,days:{}};else allProg.courses[id].startDate=startDate;
@@ -462,6 +506,7 @@ function joinCourse(id,startDate){
 }
 function leaveCourse(id){
   if(!canSave)return;
+  logEvent("leave",id);
   if(C&&C.id===id)stashCourse();
   allProg.enrolled=allProg.enrolled.filter(x=>x!==id); // progress is kept; rejoining restores it
   const next=allProg.enrolled[0];
@@ -671,6 +716,7 @@ function setDay(key,patch,ms=500){
   renderDashboardSoon();
 }
 function toggleDay(key,done){
+  logEvent(done?"day_done":"day_undone",C&&C.id,{key});
   const d=DAYS.find(x=>x.key===key),r=state.days[key]||{};
   const patch={done};if(done){patch.doneAt=isoD(todayD());if(r.hours==null||r.hours==="")patch.hours=d.hrs}else{patch.doneAt=null}
   setDay(key,patch,300);renderPlanSoon();
@@ -735,6 +781,7 @@ function startQuiz(wn){
       card.append(el("div",{class:"explain",html:(ok?"<b style=\"color:var(--good)\">Correct.</b> ":"<b style=\"color:var(--bad)\">Not quite.</b> ")+q[3]}))});
     const p=Math.round(100*score/qs.length);
     quiz.attempts=[...quiz.attempts,{week:wn,score,total:qs.length,at:new Date().toISOString()}].slice(-200);
+    logEvent("quiz",C&&C.id,{week:wn,score,total:qs.length,pct:p});
     if(canSave)quizWriter.schedule(50);
     const again=el("button",{class:"btn",type:"button",text:"Retake"});again.addEventListener("click",()=>startQuiz(wn));
     const home=el("button",{class:"btn primary",type:"button",text:"Back to quizzes"});home.addEventListener("click",renderQuizHome);
@@ -790,15 +837,154 @@ function renderCourses(){
     el("p",{html:"Copy <code>courses/_template.js</code>, fill in the weeks, topics and quiz questions, and add one <code>&lt;script&gt;</code> line for it in <code>index.html</code>. It shows up here after you push."})]));
 }
 
+/* ---------- activity log ---------- */
+let sbClient=null;
+function logEvent(type,course_id,meta){
+  if(!sbClient||!uid)return;
+  sbClient.from("activity").insert({user_id:uid,type,course_id:course_id||null,meta:meta||{}}).then(()=>{},()=>{});
+}
+
+/* ---------- admin ---------- */
+let isAdmin=false, adminData=null, adminOpenUser=null;
+const EVT={visit:["opened the app","var(--dim)"],join:["joined","var(--good)"],leave:["left","var(--bad)"],day_done:["completed","var(--accent)"],day_undone:["unticked","var(--warn)"],quiz:["took a quiz in","var(--a-rag)"]};
+const ago=t=>{const s=(Date.now()-new Date(t))/1000;if(s<60)return"just now";if(s<3600)return`${Math.floor(s/60)} min ago`;if(s<86400)return`${Math.floor(s/3600)} h ago`;const d=Math.floor(s/86400);return d<30?`${d} day${d>1?"s":""} ago`:new Date(t).toLocaleDateString(undefined,{day:"numeric",month:"short"})};
+const cTitle=id=>(COURSES.find(c=>c.id===id)||{}).title||id||"—";
+function userSummary(u){
+  const p=u.progress||{},q=u.quizzes||{};
+  const enrolled=Array.isArray(p.enrolled)?p.enrolled:Object.keys(p.courses||{});
+  let done=0,total=0,hours=0;const per={};
+  enrolled.forEach(cid=>{const c=COURSES.find(x=>x.id===cid);const days=(p.courses&&p.courses[cid]&&p.courses[cid].days)||{};
+    const d=Object.values(days).filter(x=>x&&x.done).length,h=Object.values(days).reduce((a,x)=>a+(+x?.hours||0),0);
+    const n=c?c.weeks.reduce((a,w)=>a+w[2].length,0):0;done+=d;total+=n;hours+=h;
+    const at=(q.courses&&q.courses[cid]&&q.courses[cid].attempts)||[];
+    const best={};at.forEach(a=>{const pc=Math.round(100*a.score/a.total);if(best[a.week]==null||pc>best[a.week])best[a.week]=pc});
+    per[cid]={done:d,n,hours:h,start:p.courses?.[cid]?.startDate,attempts:at.length,best};});
+  const attempts=Object.values(q.courses||{}).flatMap(c=>c.attempts||[]);
+  const qavg=attempts.length?Math.round(attempts.reduce((a,x)=>a+100*x.score/x.total,0)/attempts.length):null;
+  const passed=attempts.some(a=>a.score/a.total>=.8);
+  const last=[u.last_activity,u.updated_at,u.last_sign_in_at].filter(Boolean).sort().pop()||u.created_at;
+  return {enrolled,done,total,hours,pct:total?Math.round(100*done/total):0,attempts,qavg,passed,per,last};
+}
+async function loadAdmin(){
+  const msg=$("#adminMsg");msg.hidden=true;
+  if(!sbClient||!isAdmin){msg.hidden=false;msg.textContent="Admin access is only available to admin accounts.";return}
+  $("#adminRefresh").disabled=true;$("#adminRefresh").textContent="Loading…";
+  const {data,error}=await sbClient.rpc("admin_overview",{days:90});
+  $("#adminRefresh").disabled=false;$("#adminRefresh").textContent="Refresh";
+  if(error){msg.hidden=false;msg.textContent="Couldn't load admin data: "+error.message;return}
+  adminData=data;renderAdmin();
+}
+function renderAdmin(){
+  if(!adminData){loadAdmin();return}
+  const range=+$("#adminRange").value,since=Date.now()-range*DAYMS;
+  const users=adminData.users||[],acts=(adminData.activity||[]).filter(a=>new Date(a.at)>=since);
+  const S=new Map(users.map(u=>[u.id,userSummary(u)]));
+  const newU=users.filter(u=>new Date(u.created_at)>=since).length;
+  const activeIds=new Set(acts.map(a=>a.user_id));users.forEach(u=>{const l=S.get(u.id).last;if(l&&new Date(l)>=since)activeIds.add(u.id)});
+  const joined=users.filter(u=>S.get(u.id).enrolled.length).length;
+  const daysDone=acts.filter(a=>a.type==="day_done").length;
+  const quizN=acts.filter(a=>a.type==="quiz").length;
+  kpiN=0;
+  $("#adminKpis").replaceChildren(
+    kpi("Users",`${users.length}`,"",`${newU} new in ${range} days`),
+    kpi("Active",`${activeIds.size}`,"",`Used the app in ${range} days`),
+    kpi("Joined a course",`${users.length?Math.round(100*joined/users.length):0}`,"%",`${joined} of ${users.length} users`),
+    kpi("Days completed",`${daysDone}`,"",`In the last ${range} days`),
+    kpi("Quiz attempts",`${quizN}`,"",`In the last ${range} days`));
+  // funnel (all time)
+  const steps=[["Signed up",users.length],["Joined a course",joined],["Completed 1+ day",users.filter(u=>S.get(u.id).done>=1).length],
+    ["Completed 7+ days",users.filter(u=>S.get(u.id).done>=7).length],["Took a quiz",users.filter(u=>S.get(u.id).attempts.length).length],["Passed a quiz (80%+)",users.filter(u=>S.get(u.id).passed).length]];
+  const f=$("#adminFunnel");f.replaceChildren();const top=steps[0][1]||1;
+  steps.forEach(([lab,n],i)=>{const prev=i?steps[i-1][1]:n,drop=prev?Math.round(100*(prev-n)/prev):0;
+    f.append(el("div",{class:"fstep"},[el("div",{class:"lab"},[el("span",{},[document.createTextNode(lab),i&&drop>0?el("span",{class:"drop",text:`−${drop}%`}):null]),el("span",{class:"num",text:`${n} · ${Math.round(100*n/top)}%`})]),el("div",{class:"fbar"},[el("span",{style:`width:${Math.round(100*n/top)}%`})])]))});
+  // daily series
+  const nd=Math.min(range,90),labels=[],active=[],done=[],signups=[];
+  for(let i=nd-1;i>=0;i--){const d=new Date(todayD().getTime()-i*DAYMS),k=isoD(d);labels.push(fmtD(d));
+    const dayActs=(adminData.activity||[]).filter(a=>isoD(new Date(a.at))===k);
+    active.push(new Set(dayActs.map(a=>a.user_id)).size);
+    done.push(dayActs.filter(a=>a.type==="day_done").length);
+    signups.push(users.filter(u=>isoD(new Date(u.created_at))===k).length);}
+  if(typeof Chart!=="undefined"){
+    const grid=css("--line"),base={responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10,boxHeight:10,usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:8,maxRotation:0}},y:{beginAtZero:true,grid:{color:grid},ticks:{precision:0}}}};
+    upsert("cAdminDaily",{type:"line",data:{labels,datasets:[{label:"Active users",data:active,borderColor:css("--accent"),backgroundColor:"rgba(123,140,255,.12)",fill:true,tension:.3,pointRadius:0,borderWidth:2},{label:"Days completed",data:done,borderColor:css("--good"),tension:.3,pointRadius:0,borderWidth:2}]},options:{...base,interaction:{mode:"index",intersect:false}}});
+    upsert("cAdminSignups",{type:"bar",data:{labels,datasets:[{label:"Sign-ups",data:signups,backgroundColor:css("--accent2"),borderRadius:4}]},options:{...base,plugins:{legend:{display:false}}}});
+    // quiz by week: course with most attempts
+    const att=[];users.forEach(u=>Object.entries((u.quizzes||{}).courses||{}).forEach(([cid,c])=>(c.attempts||[]).forEach(a=>att.push({cid,...a}))));
+    const counts={};att.forEach(a=>counts[a.cid]=(counts[a.cid]||0)+1);
+    const qc=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0]||(COURSES[0]&&COURSES[0].id);const qcourse=COURSES.find(c=>c.id===qc);
+    $("#quizCourseSub").textContent=qcourse?`${qcourse.title} · average of all attempts`:"No attempts yet";
+    const wk=qcourse?qcourse.weeks.map((_,i)=>i+1):[];
+    const avg=wk.map(w=>{const xs=att.filter(a=>a.cid===qc&&a.week===w);return xs.length?Math.round(xs.reduce((s,a)=>s+100*a.score/a.total,0)/xs.length):null});
+    upsert("cAdminQuiz",{type:"bar",data:{labels:wk.map(w=>`W${w}`),datasets:[{label:"Average score",data:avg,backgroundColor:avg.map(v=>v==null?"rgba(255,255,255,.06)":v>=80?css("--good"):v>=60?css("--warn"):css("--bad")),borderRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{...base.scales,y:{min:0,max:100,grid:{color:grid},ticks:{callback:v=>v+"%"}}}}});
+  }
+  // courses table
+  const ct=el("table",{style:"min-width:640px"});ct.append(el("thead",{},[el("tr",{},["Course","Joined","Started","Avg progress","Days done","Quiz attempts","Avg quiz"].map(h=>el("th",{text:h})))]));
+  const cb=el("tbody");
+  COURSES.forEach(c=>{const us=users.filter(u=>S.get(u.id).enrolled.includes(c.id)).map(u=>S.get(u.id).per[c.id]||{done:0,n:1,attempts:0,best:{}});
+    const started=us.filter(x=>x.done>0).length,avgp=us.length?Math.round(us.reduce((a,x)=>a+100*x.done/(x.n||1),0)/us.length):0;
+    const bests=us.flatMap(x=>Object.values(x.best));const aq=bests.length?Math.round(bests.reduce((a,b)=>a+b,0)/bests.length)+"%":"—";
+    cb.append(el("tr",{},[el("td",{},[el("span",{class:"chip",style:`--c:${courseColor(c)}`},[el("i"),document.createTextNode(c.title)])]),el("td",{class:"num",text:String(us.length)}),el("td",{class:"num",text:String(started)}),
+      el("td",{},[el("div",{class:"row",style:"flex-wrap:nowrap"},[el("div",{class:"track",style:"width:90px"},[el("div",{class:"fill",style:`width:${avgp}%;--c:${courseColor(c)}`})]),el("span",{class:"num muted",text:avgp+"%"})])]),
+      el("td",{class:"num",text:String(us.reduce((a,x)=>a+x.done,0))}),el("td",{class:"num",text:String(us.reduce((a,x)=>a+x.attempts,0))}),el("td",{class:"num",text:aq})]))});
+  ct.append(cb);$("#adminCourses").replaceChildren(ct);
+  renderAdminUsers(S);
+  // feed
+  const names=new Map(users.map(u=>[u.id,(u.name||u.email||"Someone").split(" ")[0]]));
+  const fd=$("#adminFeed");fd.replaceChildren();
+  const recent=(adminData.activity||[]).slice(0,40);
+  if(!recent.length)fd.append(el("div",{class:"empty",text:"No activity yet. Events appear here as people use the app."}));
+  recent.forEach(a=>{const [verb,col]=EVT[a.type]||[a.type,"var(--dim)"];
+    let what=a.type==="visit"?"":cTitle(a.course_id);
+    if(a.type==="day_done"||a.type==="day_undone")what=`day ${a.meta?.key||""} · ${cTitle(a.course_id)}`;
+    if(a.type==="quiz")what=`${cTitle(a.course_id)} · week ${a.meta?.week} · ${a.meta?.pct}%`;
+    fd.append(el("div",{class:"fitem"},[el("span",{class:"dot",style:`--c:${col}`}),el("div",{},[el("span",{text:`${names.get(a.user_id)||"Someone"} ${verb} ${what}`.trim()}),el("small",{text:ago(a.at)})])]))});
+}
+function renderAdminUsers(S){
+  const users=adminData.users||[],q=($("#userSearch").value||"").toLowerCase();
+  const list=users.filter(u=>!q||(u.name||"").toLowerCase().includes(q)||(u.email||"").toLowerCase().includes(q));
+  const t=el("table",{style:"min-width:760px"});t.append(el("thead",{},[el("tr",{},["User","Sign-in","Joined","Last active","Courses","Progress","Quiz avg","Status"].map(h=>el("th",{text:h})))]));
+  const tb=el("tbody");
+  list.forEach(u=>{const s=S.get(u.id),days=(Date.now()-new Date(s.last))/DAYMS;
+    const status=!s.enrolled.length?["No course","info"]:s.done===0?["Not started","warn"]:days<=3?["Active","good"]:days<=14?["Slowing","warn"]:["Inactive","bad"];
+    const ini=((u.name||u.email||"?").split(/\s+/).map(w=>w[0]).join("")).slice(0,2).toUpperCase();
+    const tr=el("tr",{class:"urow",tabindex:"0"},[
+      el("td",{},[el("div",{class:"ucell"},[el("span",{class:"av",text:ini}),el("div",{style:"min-width:0"},[el("b",{text:u.name||"—"}),el("small",{text:u.email||""})])])]),
+      el("td",{class:"muted",text:u.provider==="google"?"Google":"Email"}),
+      el("td",{class:"num muted",text:new Date(u.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"})}),
+      el("td",{class:"muted",text:ago(s.last)}),
+      el("td",{text:s.enrolled.length?s.enrolled.map(cTitle).join(", "):"—"}),
+      el("td",{},[el("div",{class:"row",style:"flex-wrap:nowrap"},[el("div",{class:"track",style:"width:70px"},[el("div",{class:"fill",style:`width:${s.pct}%`})]),el("span",{class:"num muted",text:`${s.done}/${s.total||0}`})])]),
+      el("td",{class:"num",text:s.qavg==null?"—":s.qavg+"%"}),
+      el("td",{},[el("span",{class:"pill "+status[1],text:status[0]})])]);
+    const toggle=()=>{adminOpenUser=adminOpenUser===u.id?null:u.id;renderAdminUsers(S)};
+    tr.addEventListener("click",toggle);tr.addEventListener("keydown",e=>{if(e.key==="Enter")toggle()});
+    tb.append(tr);
+    if(adminOpenUser===u.id){
+      const cards=s.enrolled.map(cid=>{const x=s.per[cid]||{};const p=x.n?Math.round(100*x.done/x.n):0;
+        return el("div",{class:"panel",style:"padding:14px"},[el("b",{text:cTitle(cid)}),el("div",{class:"muted",style:"font-size:12px;margin:4px 0 8px",text:`Started ${x.start?fmtD(parseD(x.start)):"—"} · ${fmtH(x.hours||0)} h · ${x.attempts||0} quiz attempts`}),
+          el("div",{class:"track"},[el("div",{class:"fill",style:`width:${p}%`})]),el("div",{class:"num muted",style:"font-size:12px;margin-top:6px",text:`${x.done}/${x.n} days · ${p}%`})])});
+      const ev=(adminData.activity||[]).filter(a=>a.user_id===u.id).slice(0,8).map(a=>el("div",{class:"muted",style:"font-size:12px",text:`${ago(a.at)} · ${(EVT[a.type]||[a.type])[0]} ${a.type==="visit"?"":cTitle(a.course_id)}`}));
+      tb.append(el("tr",{class:"udetail"},[el("td",{colspan:"8"},[el("div",{class:"mini"},cards.length?cards:[el("div",{class:"muted",text:"Hasn't joined a course."})]),
+        el("div",{style:"margin-top:12px;display:grid;gap:2px"},[el("div",{class:"eyebrow",text:"Recent activity"}),...(ev.length?ev:[el("div",{class:"muted",style:"font-size:12px",text:"No events yet."})])])])]));
+    }
+  });
+  if(!list.length)tb.append(el("tr",{},[el("td",{colspan:"8",class:"muted",text:"No users match."})]));
+  t.append(tb);$("#adminUsers").replaceChildren(t);
+}
+$("#adminRange").addEventListener("change",()=>{if(adminData)renderAdmin()});
+$("#adminRefresh").addEventListener("click",loadAdmin);
+$("#userSearch").addEventListener("input",()=>{if(adminData){const S=new Map(adminData.users.map(u=>[u.id,userSummary(u)]));renderAdminUsers(S)}});
+
 /* ---------- routing ---------- */
 let current="dashboard";
 function route(){
-  const h=(location.hash||"#dashboard").slice(1);current=["dashboard","plan","quizzes","courses"].includes(h)?h:"dashboard";
-  if(current!=="courses"&&!(C&&isEnrolled(C.id))&&uid){current="courses";if(location.hash!=="#courses")history.replaceState(null,"","#courses")}
+  const h=(location.hash||"#dashboard").slice(1);current=["dashboard","plan","quizzes","courses","admin"].includes(h)?h:"dashboard";
+  if(current==="admin"&&!isAdmin)current="dashboard";
+  if(current!=="courses"&&current!=="admin"&&!(C&&isEnrolled(C.id))&&uid){current="courses";if(location.hash!=="#courses")history.replaceState(null,"","#courses")}
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==`v-${current}`);
   document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===current)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   moveInd();kpiN=0;
-  if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="courses")renderCourses();else renderQuizHome();
+  if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
 }
 window.addEventListener("hashchange",route);
 
@@ -817,7 +1003,7 @@ route();
   if(typeof supabase==="undefined"||!cfg.SUPABASE_URL||cfg.SUPABASE_URL.includes("YOUR_")){
     setSync("err","Not configured");note.hidden=false;
     note.textContent="Saving isn't set up yet. Add your Supabase URL and anon key to config.js (see README).";booted();return}
-  const sb=supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
+  const sb=supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);sbClient=sb;
   const T="study_state";
   const asErr=e=>({code:"unavailable",message:e.message});
   progRef={set:async body=>{const {error}=await sb.from(T).upsert({user_id:uid,progress:body,updated_at:new Date().toISOString()});if(error)throw asErr(error)}};
@@ -868,7 +1054,7 @@ route();
     $("#profile").hidden=false;
   }
   async function onUser(user){
-    if(!user){uid=null;canSave=false;userName="";$("#auth").hidden=false;$("#profile").hidden=true;closeMenu();setSync("idle","Signed out");
+    if(!user){uid=null;canSave=false;userName="";isAdmin=false;adminData=null;$("#adminLink").hidden=true;$("#auth").hidden=false;$("#profile").hidden=true;closeMenu();setSync("idle","Signed out");
       allProg={current:null,enrolled:[],courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();booted();return}
     showUser(user);
     if(uid===user.id){booted();return}
@@ -881,7 +1067,10 @@ route();
     allQuiz={courses:{...(q.courses||{})}};
     const startId=isEnrolled(allProg.current)?allProg.current:allProg.enrolled[0];
     if(startId)loadCourse(startId);else{setCourse(COURSES[0].id);C=null;allProg.current=null;updatePicker()}
-    canSave=true;setSync("ok","Synced");route();booted();
+    canSave=true;setSync("ok","Synced");
+    try{const r=await sb.rpc("is_admin");isAdmin=r.data===true}catch(e){isAdmin=false}
+    $("#adminLink").hidden=!isAdmin;
+    route();booted();logEvent("visit",allProg.current);
   }
   const qp=new URLSearchParams(location.search+"&"+location.hash.slice(1));
   if(qp.get("error_description")){$("#authMsg").className="authmsg err";$("#authMsg").textContent=qp.get("error_description").replace(/\+/g," ");history.replaceState(null,"",location.pathname)}
