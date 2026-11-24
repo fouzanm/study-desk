@@ -71,7 +71,8 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 .mhead b{display:block;font-size:14px}
 .mitem{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:8px;border:0;background:none;color:var(--fg);text-decoration:none;cursor:pointer;font-size:13px}
 .mitem:hover{background:rgba(255,255,255,.05)}
-.ccard{display:grid;gap:12px;align-content:start}
+.ccard{display:flex;flex-direction:column;gap:12px}
+.ccard>.row:last-child,.ccard>.joinpick{margin-top:auto}
 .ccard.cur{border-color:color-mix(in srgb,var(--cc) 55%,transparent)}
 .ccard .cbadge{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;color:var(--on-accent);background:var(--cc)}
 .ccard h3{font-size:17px}
@@ -452,6 +453,9 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 <script src="config.js"></script>
 <!-- Courses: one file each. The first one is the default. -->
 <script src="courses/fde.js"></script>
+<script src="courses/software-engineer.js"></script>
+<script src="courses/data-engineer.js"></script>
+<script src="courses/ai-engineer.js"></script>
 <script>
 (() => {
 "use strict";
@@ -494,7 +498,7 @@ function loadCourse(id){setCourse(id);allProg.current=C.id;const p=allProg.cours
   state={startDate:p.startDate||nextMonday(),days:{...(p.days||{})}};quiz={attempts:[...(q.attempts||[])]};
   updatePicker();
   for(const k in charts){charts[k].destroy();delete charts[k]}planBuilt=false}
-function courseColor(c){return Object.values(c.areas||{})[0]||"#7b8cff"}
+function courseColor(c){return c.color||Object.values(c.areas||{})[0]||"#7b8cff"}
 function switchCourse(id){if(C&&C.id===id&&isEnrolled(id)){location.hash="#dashboard";return}if(isEnrolled(C?.id))stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
 function joinCourse(id,startDate){
   if(!canSave)return;
@@ -841,7 +845,7 @@ function renderCourses(){
 let sbClient=null;
 function logEvent(type,course_id,meta){
   if(!sbClient||!uid)return;
-  sbClient.from("activity").insert({user_id:uid,type,course_id:course_id||null,meta:meta||{}}).then(()=>{},()=>{});
+  try{Promise.resolve(sbClient.from("activity").insert({user_id:uid,type,course_id:course_id||null,meta:meta||{}})).then(()=>{},()=>{})}catch(e){/* analytics must never break the app */}
 }
 
 /* ---------- admin ---------- */

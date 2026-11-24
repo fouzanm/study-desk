@@ -5,6 +5,7 @@
 (window.STUDY_COURSES = window.STUDY_COURSES || []).push({
   id: "my-course",                 // unique, lowercase, no spaces. Never change it later (your progress is saved under it)
   title: "My Course",
+  color: "#f5bd4f",                // badge colour on the Courses page
   description: "One sentence about what this course covers.",
   hoursPerDay: [1, 1, 1, 1, 1, 3, 1],  // Mon..Sun
   areas: {                         // topic areas and their colors

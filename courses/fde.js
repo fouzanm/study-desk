@@ -3,6 +3,7 @@
 // <script src="courses/your-file.js"></script> line in index.html.
 (window.STUDY_COURSES = window.STUDY_COURSES || []).push({
   id: "fde",
+  color: "#7b8cff",
   title: "FDE Prep",
   description: "12 weeks to Forward Deployed, Implementation and Integration Engineer roles: SQL, APIs, LLMs, agents, MCP, RAG, integrations and interviews.",
   hoursPerDay: [2, 2, 2, 2, 2, 4, 2],   // Mon..Sun pattern, repeats every week
