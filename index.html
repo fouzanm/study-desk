@@ -58,6 +58,17 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 /* course picker + profile */
 .coursepick{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;color:var(--fg);text-decoration:none;font-size:13px;background:rgba(255,255,255,.02);max-width:220px}
 .coursepick:hover{border-color:var(--line2)}
+button.coursepick{cursor:pointer;font:inherit;font-size:13px}
+.pickwrap{position:relative}
+.pickmenu{left:0;right:auto;width:min(300px,calc(100vw - 40px));max-height:min(70vh,520px);overflow-y:auto}
+.pickmenu .glab{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:10px 10px 4px}
+.mitem.pitem{display:grid;grid-template-columns:8px 1fr auto;gap:10px;align-items:center}
+.pitem .pt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pitem .pp{font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.pitem[aria-current="true"]{background:rgba(255,255,255,.06)}
+.pitem[aria-current="true"] .pt{font-weight:600}
+.pickmenu .sep{height:1px;background:var(--line);margin:6px 2px}
+.pickmenu .mnote{font-size:12.5px;color:var(--muted);padding:8px 10px}
 .coursepick span:nth-child(2){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cdot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);flex:none}
 .profile{position:relative}
@@ -320,6 +331,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 
 @media (max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.qgrid{grid-template-columns:1fr 1fr}.b-today,.b-ring,.b-half,.b-third,.b-twothird{grid-column:1/-1}}
 @media (max-width:600px){.kpis{grid-template-columns:1fr 1fr}.qgrid{grid-template-columns:1fr}.weeks{gap:3px}.who .sync span{display:none}details.week summary{grid-template-columns:1fr auto;gap:10px}.wnum,.caret{display:none}.wmeta .track{width:60px}.today h1{font-size:24px}.pagehead h1{font-size:26px}}
+@media (max-width:760px){nav{max-width:100%;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a{flex:none;white-space:nowrap;padding:6px 11px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -328,7 +340,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 <header class="top">
   <div class="wrap">
     <div class="brand"><div class="logo">SD</div>Study Desk</div>
-    <a class="coursepick" href="#paths" id="coursePick" title="Change course"><span class="cdot" id="courseDot"></span><span id="courseName">Course</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <div class="pickwrap" id="pickWrap"><button class="coursepick" type="button" id="coursePick" title="Switch plan" aria-haspopup="true" aria-expanded="false"><span class="cdot" id="courseDot"></span><span id="courseName">Course</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+      <div class="menu pickmenu" id="pickMenu" hidden></div></div>
     <nav aria-label="Sections"><span class="ind" aria-hidden="true"></span>
       <a href="#dashboard" data-v="dashboard">Dashboard</a>
       <a href="#plan" data-v="plan">Plan</a>
@@ -336,6 +349,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
       <a href="#revise" data-v="revise">Revise</a>
       <a href="#paths" data-v="paths">Paths</a>
       <a href="#courses" data-v="courses">Courses</a>
+      <a href="#projects" data-v="projects">Projects</a>
       <a href="#admin" data-v="admin" id="adminLink" hidden>Admin</a>
     </nav>
     <div class="who">
@@ -346,6 +360,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
           <div class="mhead"><span class="av lg" id="avatarI2">?</span><div style="min-width:0"><b id="whoName2"></b><div class="muted whoemail" id="whoEmail"></div></div></div>
           <a href="#paths" class="mitem">My paths</a>
           <a href="#courses" class="mitem">My courses</a>
+          <a href="#projects" class="mitem">My projects</a>
           <button type="button" class="mitem" id="signOut">Sign out</button>
         </div>
       </div>
@@ -485,6 +500,14 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
     </div>
   </section>
 
+  <section class="view" id="v-projects" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="pagehead"><div><div class="eyebrow">Build something real</div><h1>Projects</h1>
+        <p id="projectsIntro">Hands-on projects for your portfolio. Join one when you're ready to build; it is not part of any path.</p></div></div>
+      <div class="qgrid" id="projectGrid"></div>
+    </div>
+  </section>
+
   <section class="view" id="v-quizzes" hidden>
     <div id="quizHome" style="display:grid;gap:16px">
       <div class="pagehead"><div><div class="eyebrow" id="quizEyebrow">Weekly quizzes</div><h1>Weekly quizzes</h1>
@@ -516,7 +539,7 @@ const TOPIC=Object.fromEntries(TOPICS.map(t=>[t.id,t]));
 const DEF_HRS=[2,2,2,2,2,4,2];
 const PATHS=(window.STUDY_PATHS||[]).map(p=>({...p,kind:"path",courses:(p.courses||[]).filter(id=>TOPIC[id])})).filter(p=>p.courses.length);
 // every topic course can also be studied on its own: a one-course plan
-const PLANS=[...PATHS,...TOPICS.map(t=>({id:"c-"+t.id,kind:"course",topic:t.id,title:t.title,color:t.color,description:t.description,courses:[t.id]}))];
+const PLANS=[...PATHS,...TOPICS.map(t=>({id:"c-"+t.id,kind:t.kind==="project"?"project":"course",topic:t.id,title:t.title,color:t.color,description:t.description,courses:[t.id]}))];
 const COURSES=PLANS;
 let C=null,AREAS={},PLAN=[],QUIZ={},HRS=[],DAYS=[],TOTAL_PLANNED=0,NDAYS=0,NWEEKS=0,WEEK_HRS=0;
 const lessonCount=p=>p.courses.reduce((a,id)=>a+TOPIC[id].lessons.length,0);
@@ -576,6 +599,24 @@ function leaveCourse(id){
   if(next)loadCourse(next);else{allProg.current=null;C=null;updatePicker()}
   progWriter.schedule(50);location.hash="#"+lastListView;route();
 }
+function renderPickMenu(){
+  const m=$("#pickMenu");m.replaceChildren();
+  const groups=[["path","My paths"],["course","My courses"],["project","My projects"]];
+  let any=false;
+  groups.forEach(([k,label])=>{
+    const items=PLANS.filter(p=>p.kind===k&&isEnrolled(p.id));if(!items.length)return;any=true;
+    m.append(el("div",{class:"glab",text:label}));
+    items.forEach(p=>{const st=courseStats(p),col=courseColor(p),cur=C&&C.id===p.id;
+      const b=el("button",{type:"button",class:"mitem pitem","aria-current":cur?"true":"false"},[el("span",{class:"cdot",style:`background:${col};box-shadow:0 0 6px ${col}`}),el("span",{class:"pt",text:p.title}),el("span",{class:"pp",text:cur?"Current":`${st.pct}%`})]);
+      b.addEventListener("click",()=>{closePick();switchCourse(p.id)});m.append(b)})});
+  if(!any)m.append(el("div",{class:"mnote",text:"You haven't joined anything yet."}));
+  m.append(el("div",{class:"sep"}));
+  [["#paths","Browse paths"],["#courses","Browse courses"],["#projects","Browse projects"]].forEach(([h,t])=>{const a=el("a",{class:"mitem",href:h,text:t});a.addEventListener("click",closePick);m.append(a)});
+}
+function closePick(){$("#pickMenu").hidden=true;$("#coursePick").setAttribute("aria-expanded","false")}
+$("#coursePick").addEventListener("click",e=>{e.stopPropagation();const m=$("#pickMenu");if(m.hidden){renderPickMenu();m.style.left="";m.hidden=false;const r=m.getBoundingClientRect(),over=r.right-(innerWidth-12);if(over>0)m.style.left=-over+"px";$("#coursePick").setAttribute("aria-expanded","true")}else closePick()});
+document.addEventListener("click",e=>{if(!$("#pickMenu").hidden&&!e.target.closest("#pickWrap"))closePick()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePick()});
 function updatePicker(){
   const has=C&&isEnrolled(C.id);
   $("#courseName").textContent=has?C.title:"Choose a path";
@@ -867,7 +908,7 @@ let lastListView="paths";
 function planCard(c){
     const joined=isEnrolled(c.id),st=courseStats(c),col=courseColor(c),cur=joined&&C&&C.id===c.id;
     const badge=el("span",{class:"cbadge",text:c.title.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).map(w=>w[0]).join("").slice(0,2).toUpperCase()});
-    const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:c.kind==="path"?"Path":"Course"});
+    const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:c.kind==="path"?"Path":c.kind==="project"?"Project":"Course"});
     const foot=el("div",{class:"row",style:"justify-content:flex-end"});
     const meta=c.kind==="path"?`${c.courses.length} courses · ${st.n} lessons · about ${Math.ceil(st.n/7)} weeks`:`${st.n} lessons${TOPIC[c.topic].quiz&&TOPIC[c.topic].quiz.length?" · quiz":""}`;
     const kids=[el("div",{style:"display:flex;justify-content:space-between;align-items:center"},[badge,tag]),el("h3",{text:c.title}),el("p",{text:c.description||""}),
@@ -880,7 +921,7 @@ function planCard(c){
       const open=el("button",{class:cur?"btn":"btn primary",type:"button",text:cur?"Continue":"Open"});open.addEventListener("click",()=>switchCourse(c.id));
       foot.append(leave,open);
     }else{
-      const join=el("button",{class:"btn primary",type:"button",text:c.kind==="path"?"Start this path":"Join course"});join.disabled=!canSave;
+      const join=el("button",{class:"btn primary",type:"button",text:c.kind==="path"?"Start this path":c.kind==="project"?"Start project":"Join course"});join.disabled=!canSave;
       join.addEventListener("click",()=>{
         const nm=nextMonday(),today=isoD(todayD());
         const pick=el("div",{class:"joinpick"},[el("div",{class:"eyebrow",text:"When do you want to start?"})]);
@@ -913,6 +954,15 @@ function renderCourses(){
   if(mine.length){g.append(el("div",{class:"glabel",text:"My courses"}));mine.forEach(c=>g.append(planCard(c)))}
   if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"More courses":"All courses"}));other.forEach(c=>g.append(planCard(c)))}
 }
+function renderProjects(){
+  lastListView="projects";
+  const g=$("#projectGrid");g.replaceChildren();
+  const projs=PLANS.filter(c=>c.kind==="project");
+  const mine=projs.filter(c=>isEnrolled(c.id)),other=projs.filter(c=>!isEnrolled(c.id));
+  $("#projectsIntro").textContent=mine.length?"Your projects are first. Build one step at a time and tick each step when it works.":"Hands-on projects for your portfolio. Join one when you're ready to build; it is not part of any path.";
+  if(mine.length){g.append(el("div",{class:"glabel",text:"My projects"}));mine.forEach(c=>g.append(planCard(c)))}
+  if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"More projects":"All projects"}));other.forEach(c=>g.append(planCard(c)))}
+}
 
 /* ---------- lessons ---------- */
 window.STUDY_LESSONS=window.STUDY_LESSONS||{};
@@ -927,7 +977,7 @@ const isReviewDay=d=>d.type==="review";
 function lessonLink(d,label){const a=el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn lbtn",text:label||"Open lesson"});return a}
 async function renderLesson(cid,key){
   const box=$("#lessonView");box.replaceChildren(el("div",{class:"muted",text:"Loading lesson…"}));
-  if(!C||C.id!==cid){if(isEnrolled(cid))loadCourse(cid);else{location.hash="#courses";return}}
+  if(!C||C.id!==cid){if(isEnrolled(cid))loadCourse(cid);else{location.hash=cid.startsWith("c-project-")?"#projects":"#courses";return}}
   const d=DAYS.find(x=>x.key===key);if(!d){location.hash="#plan";return}
   await loadTopicLessons(d.tid);
   if(location.hash!==`#learn/${cid}/${key}`)return;
@@ -1139,18 +1189,18 @@ let current="dashboard";
 function route(){
   const h=(location.hash||"#dashboard").slice(1);let lessonArgs=null;
   if(h.startsWith("learn/")){const [,cid,key]=h.split("/");lessonArgs=[cid,key];current="learn"}
-  else current=["dashboard","plan","quizzes","paths","courses","admin","revise"].includes(h)?h:"dashboard";
+  else current=["dashboard","plan","quizzes","paths","courses","projects","admin","revise"].includes(h)?h:"dashboard";
   if(current==="admin"&&!isAdmin)current="dashboard";
-  if(current!=="courses"&&current!=="paths"&&current!=="admin"&&!(C&&isEnrolled(C.id))&&uid){current="paths";if(location.hash!=="#paths")history.replaceState(null,"","#paths")}
+  if(!["courses","paths","projects","admin"].includes(current)&&!(C&&isEnrolled(C.id))&&uid){current="paths";if(location.hash!=="#paths")history.replaceState(null,"","#paths")}
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==`v-${current}`);
   document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===(current==="learn"?"plan":current))a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   moveInd();kpiN=0;
-  if(current==="learn"&&lessonArgs)renderLesson(...lessonArgs);else if(current==="revise")renderRevise();else if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="paths")renderPaths();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
+  if(current==="learn"&&lessonArgs)renderLesson(...lessonArgs);else if(current==="revise")renderRevise();else if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="paths")renderPaths();else if(current==="courses")renderCourses();else if(current==="projects")renderProjects();else if(current==="admin")renderAdmin();else renderQuizHome();
 }
 window.addEventListener("hashchange",route);
 
 /* ---------- nav indicator + spotlight ---------- */
-function moveInd(){const a=document.querySelector('nav a[aria-current="page"]'),ind=document.querySelector("nav .ind");if(!a||!ind)return;ind.style.width=a.offsetWidth+"px";ind.style.transform=`translateX(${a.offsetLeft}px)`}
+function moveInd(){const a=document.querySelector('nav a[aria-current="page"]'),ind=document.querySelector("nav .ind");if(!a||!ind)return;ind.style.width=a.offsetWidth+"px";ind.style.transform=`translateX(${a.offsetLeft}px)`;const n=a.parentElement;if(n.scrollWidth>n.clientWidth)n.scrollLeft=a.offsetLeft-(n.clientWidth-a.offsetWidth)/2}
 window.addEventListener("resize",moveInd);
 document.addEventListener("pointermove",e=>{const p=e.target.closest&&e.target.closest(".spot");if(!p)return;const r=p.getBoundingClientRect();p.style.setProperty("--mx",(e.clientX-r.left)+"px");p.style.setProperty("--my",(e.clientY-r.top)+"px")},{passive:true});
 

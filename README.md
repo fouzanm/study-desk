@@ -51,6 +51,7 @@ Open the site, choose **Create account**, and sign in.
 
 - **Courses** are single topics (SQL, RAG, Airflow…). They live in `catalog/topics.js`, each with an ordered list of lessons and a quiz.
 - **Paths** are bundles of courses for a role (FDE, AI Engineer, Software Engineer, Data Engineer). They live in `catalog/paths.js`.
+- **Projects** are hands-on portfolio builds. They are courses with `"kind":"project"` in `catalog/topics.js`, listed under the Projects menu and never inside a path.
 - **Lessons** load on demand from `lessons/<course-id>.js`. A lesson that isn't written yet shows "coming soon".
 - Progress is stored per lesson, so a lesson done in one path counts in every path that includes it.
 
