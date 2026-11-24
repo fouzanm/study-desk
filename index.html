@@ -79,6 +79,11 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 .ccard.add{border-style:dashed;background:none}
 @media (max-width:600px){.pname,.coursepick span:nth-child(2){display:none}}
 /* login */
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#f4f5f8;color:#14161c;border-color:#f4f5f8;font-weight:600}
+.gbtn:hover{background:#fff;border-color:#fff}
+.or{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line2)}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .auth{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;background:rgba(7,8,11,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
 .authcard{width:100%;max-width:400px;display:grid;gap:14px;padding:28px}
 .authcard h1{font-size:24px}
@@ -292,6 +297,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
   <form class="panel authcard beam" id="authForm" novalidate>
     <div class="logo" style="width:40px;height:40px;font-size:13px">SD</div>
     <div><div class="eyebrow">Study Desk · your study platform</div><h1 style="margin-top:6px" id="authTitle">Sign in</h1></div>
+    <button class="btn gbtn" type="button" id="googleBtn"><svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
+    <div class="or"><span>or use email</span></div>
     <div class="tabs2" role="group" aria-label="Sign in or create account"><button type="button" id="modeIn" aria-pressed="true">Sign in</button><button type="button" id="modeUp" aria-pressed="false">Create account</button></div>
     <label class="field" for="fullName" id="nameField" hidden>Your name<input type="text" id="fullName" autocomplete="name" maxlength="60"></label>
     <label class="field" for="email">Email<input type="email" id="email" autocomplete="email" required></label>
@@ -784,12 +791,20 @@ route();
   document.addEventListener("keydown",e=>{if(e.key==="Escape")closeMenu()});
   pmenu.addEventListener("click",e=>{if(e.target.closest(".mitem"))closeMenu()});
   $("#signOut").addEventListener("click",()=>sb.auth.signOut());
+  $("#googleBtn").addEventListener("click",async()=>{
+    const msg=$("#authMsg");msg.className="authmsg";msg.textContent="Opening Google…";
+    const {error}=await sb.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});
+    if(error){msg.className="authmsg err";msg.textContent=error.message.includes("not enabled")?"Google sign-in isn't switched on yet in Supabase.":error.message}
+  });
 
   function showUser(user){
-    const name=(user.user_metadata&&user.user_metadata.full_name)||"";
+    const md=user.user_metadata||{};
+    const name=md.full_name||md.name||"";
     userName=name;const label=name||user.email||"You";
     const initials=(name?name.split(/\s+/).map(w=>w[0]).join(""):(user.email||"?")[0]).slice(0,2).toUpperCase();
-    $("#avatarI").textContent=initials;$("#avatarI2").textContent=initials;
+    const pic=md.avatar_url||md.picture||"";
+    for(const id of ["#avatarI","#avatarI2"]){const a=$(id);a.replaceChildren();
+      if(/^https:\/\//.test(pic)){const im=el("img",{alt:"",referrerpolicy:"no-referrer"});im.src=pic;im.addEventListener("error",()=>{a.textContent=initials});a.append(im)}else a.textContent=initials}
     $("#whoName").textContent=label.split("@")[0].split(" ")[0];$("#whoName2").textContent=name||"Signed in";$("#whoEmail").textContent=user.email||"";
     $("#profile").hidden=false;
   }
