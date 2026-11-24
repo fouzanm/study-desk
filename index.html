@@ -96,6 +96,8 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 tr.urow{cursor:pointer}
 tr.udetail td{background:rgba(0,0,0,.25)}
 .mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.cchips{display:flex;flex-wrap:wrap;gap:6px}
+.cchips .chip{font-size:11px;padding:2px 8px 2px 6px}
 .glabel{grid-column:1/-1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
 .joinpick{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
 .joinpick input{background:rgba(0,0,0,.3);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;flex:1;min-width:0}
@@ -339,7 +341,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
         <button class="avbtn" type="button" id="profileBtn" aria-haspopup="true" aria-expanded="false"><span class="av" id="avatarI">?</span><span class="pname" id="whoName"></span></button>
         <div class="menu" id="profileMenu" hidden>
           <div class="mhead"><span class="av lg" id="avatarI2">?</span><div style="min-width:0"><b id="whoName2"></b><div class="muted whoemail" id="whoEmail"></div></div></div>
-          <a href="#courses" class="mitem">My courses</a>
+          <a href="#courses" class="mitem">Paths &amp; courses</a>
           <button type="button" class="mitem" id="signOut">Sign out</button>
         </div>
       </div>
@@ -419,8 +421,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
   <section class="view" id="v-revise" hidden>
     <div style="display:grid;gap:16px">
       <div class="pagehead"><div><div class="eyebrow" id="reviseEyebrow">Revision</div><h1>Revise</h1>
-        <p>One page per week with only what you must remember. Use it before quizzes and interviews.</p></div>
-        <div class="row" style="align-items:end"><label class="field" for="reviseWeek">Week<select id="reviseWeek" class="sel"></select></label></div></div>
+        <p>One page per course with only what you must remember. Use it before quizzes and interviews.</p></div>
+        <div class="row" style="align-items:end"><label class="field" for="reviseWeek">Course<select id="reviseWeek" class="sel"></select></label></div></div>
       <div class="notice" id="weakNote" hidden></div>
       <div class="row" id="reviseModes"><button class="btn primary" type="button" id="modeSheet">Cheat sheet</button><button class="btn" type="button" id="modeCards">Flashcards</button></div>
       <div id="reviseBody"></div>
@@ -432,7 +434,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
       <div class="pagehead">
         <div><div class="eyebrow" id="planEyebrow"></div><h1>Daily plan</h1>
           <p>Tick a day when you finish it and enter the hours you actually studied. Changes save on their own.</p></div>
-        <div class="row" style="align-items:end"><label class="field" for="startDate">Start date<input type="date" id="startDate"></label><button class="btn" type="button" id="resetBtn">Clear all progress</button></div>
+        <div class="row" style="align-items:end"><label class="field" for="startDate">Start date<input type="date" id="startDate"></label><button class="btn" type="button" id="resetBtn">Clear this plan's progress</button></div>
       </div>
       <div id="weeksList" class="weekslist"></div>
     </div>
@@ -455,7 +457,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
         <div class="panel spot b-half"><div class="phead"><h2>User funnel</h2><span class="sub">All time · share of sign-ups</span></div><div class="funnel" id="adminFunnel"></div></div>
         <div class="panel spot b-half"><div class="phead"><h2>Daily activity</h2><span class="sub">Active users and days completed</span></div><div class="chartbox"><canvas id="cAdminDaily"></canvas></div></div>
         <div class="panel spot b-half"><div class="phead"><h2>Sign-ups</h2><span class="sub">New accounts per day</span></div><div class="chartbox"><canvas id="cAdminSignups"></canvas></div></div>
-        <div class="panel spot b-half"><div class="phead"><h2>Quiz scores by week</h2><span class="sub" id="quizCourseSub">Average across all attempts</span></div><div class="chartbox"><canvas id="cAdminQuiz"></canvas></div></div>
+        <div class="panel spot b-half"><div class="phead"><h2>Quiz scores by course</h2><span class="sub" id="quizCourseSub">Average across all attempts</span></div><div class="chartbox"><canvas id="cAdminQuiz"></canvas></div></div>
         <div class="panel spot b-full"><div class="phead"><h2>Courses</h2><span class="sub">Enrolment and progress</span></div><div style="overflow-x:auto" id="adminCourses"></div></div>
         <div class="panel spot b-twothird"><div class="phead"><h2>Users</h2><input type="search" id="userSearch" class="sel" placeholder="Search name or email" aria-label="Search users" style="max-width:240px"></div><div style="overflow-x:auto" id="adminUsers"></div></div>
         <div class="panel spot b-third"><div class="phead"><h2>Recent activity</h2><span class="sub">Latest 40 events</span></div><div class="feed" id="adminFeed"></div></div>
@@ -488,25 +490,33 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
-<!-- Courses: one file each. The first one is the default. -->
-<script src="courses/fde.js"></script>
-<script src="courses/software-engineer.js"></script>
-<script src="courses/data-engineer.js"></script>
-<script src="courses/ai-engineer.js"></script>
+<!-- Catalog: topic courses and paths (bundles of courses). Lessons load on demand from lessons/<course>.js -->
+<script src="catalog/topics.js"></script>
+<script src="catalog/paths.js"></script>
 <script>
 (() => {
 "use strict";
 /* ---------- plan data ---------- */
-/* ---------- course (set by setCourse) ---------- */
+/* ---------- catalog: topic courses + paths (bundles) ---------- */
 const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-const COURSES=(window.STUDY_COURSES||[]).filter(c=>c&&c.id&&Array.isArray(c.weeks)&&c.weeks.length);
+const TOPICS=(window.STUDY_TOPICS||[]).filter(t=>t&&t.id&&Array.isArray(t.lessons)&&t.lessons.length);
+const TOPIC=Object.fromEntries(TOPICS.map(t=>[t.id,t]));
+const DEF_HRS=[2,2,2,2,2,4,2];
+const PATHS=(window.STUDY_PATHS||[]).map(p=>({...p,kind:"path",courses:(p.courses||[]).filter(id=>TOPIC[id])})).filter(p=>p.courses.length);
+// every topic course can also be studied on its own: a one-course plan
+const PLANS=[...PATHS,...TOPICS.map(t=>({id:"c-"+t.id,kind:"course",topic:t.id,title:t.title,color:t.color,description:t.description,courses:[t.id]}))];
+const COURSES=PLANS;
 let C=null,AREAS={},PLAN=[],QUIZ={},HRS=[],DAYS=[],TOTAL_PLANNED=0,NDAYS=0,NWEEKS=0,WEEK_HRS=0;
+const lessonCount=p=>p.courses.reduce((a,id)=>a+TOPIC[id].lessons.length,0);
 function setCourse(id){
-  C=COURSES.find(c=>c.id===id)||COURSES[0];
-  const ap=C.areas||{};AREAS={};Object.entries(ap).forEach(([k,v])=>AREAS[k]={color:v});
-  PLAN=C.weeks;QUIZ=C.quiz||{};HRS=(C.hoursPerDay&&C.hoursPerDay.length===7)?C.hoursPerDay:[2,2,2,2,2,4,2];
-  DAYS=[];PLAN.forEach((w,wi)=>{if(!AREAS[w[0]])AREAS[w[0]]={color:"#a3aabb"};w[2].forEach((t,di)=>DAYS.push({key:`${wi+1}-${di+1}`,w:wi+1,d:di+1,i:wi*7+di,area:w[0],topic:t,hrs:HRS[di%7]}))});
-  NWEEKS=PLAN.length;NDAYS=DAYS.length;TOTAL_PLANNED=DAYS.reduce((a,d)=>a+d.hrs,0);WEEK_HRS=HRS.reduce((a,b)=>a+b,0);
+  C=PLANS.find(c=>c.id===id)||PLANS[0];
+  HRS=(C.hoursPerDay&&C.hoursPerDay.length===7)?C.hoursPerDay:DEF_HRS;
+  AREAS={};DAYS=[];QUIZ={};
+  C.courses.forEach(tid=>{const t=TOPIC[tid];AREAS[t.title]={color:t.color,tid};
+    if(t.quiz&&t.quiz.length)QUIZ[tid]=t.quiz;
+    t.lessons.forEach(([lid,title,type])=>{const i=DAYS.length;DAYS.push({key:`${tid}:${lid}`,tid,lid,type:type||"lesson",i,w:Math.floor(i/7)+1,d:i%7+1,area:t.title,topic:title,hrs:HRS[i%7]})})});
+  NDAYS=DAYS.length;NWEEKS=Math.ceil(NDAYS/7);TOTAL_PLANNED=DAYS.reduce((a,d)=>a+d.hrs,0);WEEK_HRS=HRS.reduce((a,b)=>a+b,0);
+  PLAN=[];for(let w=1;w<=NWEEKS;w++){const ds=DAYS.filter(d=>d.w===w);PLAN.push([ds[0].area,[...new Set(ds.map(d=>d.area))].join(" · "),ds.map(d=>d.topic)])}
 }
 
 /* ---------- helpers ---------- */
@@ -526,37 +536,37 @@ const todayIndex=()=>Math.round((todayD()-parseD(state.startDate))/DAYMS);
 
 /* ---------- state ---------- */
 function nextMonday(){const t=todayD(),k=(8-t.getDay())%7;return isoD(new Date(t.getTime()+k*DAYMS))}
-let state={startDate:nextMonday(),days:{}};
-let quiz={attempts:[]};
-let allProg={current:null,enrolled:[],courses:{}}, allQuiz={courses:{}};
-const isEnrolled=id=>allProg.enrolled.includes(id);
-function stashCourse(){if(!C)return;allProg.courses[C.id]={startDate:state.startDate,days:state.days};allQuiz.courses[C.id]={attempts:quiz.attempts}}
-function loadCourse(id){setCourse(id);allProg.current=C.id;const p=allProg.courses[C.id]||{},q=allQuiz.courses[C.id]||{};
-  state={startDate:p.startDate||nextMonday(),days:{...(p.days||{})}};quiz={attempts:[...(q.attempts||[])]};
+let state={startDate:nextMonday(),days:{}};   // days = lesson progress, shared by every plan
+let quiz={attempts:[]};                          // attempts: {topic, score, total, at}
+let allProg={current:null,enrolled:[],plans:{},lessons:{}}, allQuiz={attempts:[]};
+const isEnrolled=id=>!!id&&allProg.enrolled.includes(id);
+function stashCourse(){allProg.lessons=state.days;allQuiz.attempts=quiz.attempts;if(C&&isEnrolled(C.id))allProg.plans[C.id]={...(allProg.plans[C.id]||{}),startDate:state.startDate}}
+function loadCourse(id){setCourse(id);allProg.current=C.id;const p=allProg.plans[C.id]||{};
+  state={startDate:p.startDate||nextMonday(),days:allProg.lessons};quiz={attempts:allQuiz.attempts};
   updatePicker();
   for(const k in charts){charts[k].destroy();delete charts[k]}planBuilt=false}
-function courseColor(c){return c.color||Object.values(c.areas||{})[0]||"#7b8cff"}
-function switchCourse(id){if(C&&C.id===id&&isEnrolled(id)){location.hash="#dashboard";return}if(isEnrolled(C?.id))stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
+function courseColor(c){return c.color||"#7b8cff"}
+function switchCourse(id){if(C&&C.id===id&&isEnrolled(id)){location.hash="#dashboard";return}stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
 function joinCourse(id,startDate){
   if(!canSave)return;
   logEvent("join",id,{startDate});
-  if(C&&isEnrolled(C.id))stashCourse();
+  stashCourse();
   allProg.enrolled=[...new Set([...allProg.enrolled,id])];
-  if(!allProg.courses[id])allProg.courses[id]={startDate,days:{}};else allProg.courses[id].startDate=startDate;
+  allProg.plans[id]={...(allProg.plans[id]||{}),startDate};
   loadCourse(id);progWriter.schedule(50);location.hash="#dashboard";route();
 }
 function leaveCourse(id){
   if(!canSave)return;
   logEvent("leave",id);
-  if(C&&C.id===id)stashCourse();
-  allProg.enrolled=allProg.enrolled.filter(x=>x!==id); // progress is kept; rejoining restores it
+  stashCourse();
+  allProg.enrolled=allProg.enrolled.filter(x=>x!==id); // lesson progress is kept
   const next=allProg.enrolled[0];
-  if(next)loadCourse(next);else{allProg.current=null;C=null;setCourse(COURSES[0].id);C=null;updatePicker()}
+  if(next)loadCourse(next);else{allProg.current=null;C=null;updatePicker()}
   progWriter.schedule(50);route();
 }
 function updatePicker(){
   const has=C&&isEnrolled(C.id);
-  $("#courseName").textContent=has?C.title:"Join a course";
+  $("#courseName").textContent=has?C.title:"Choose a path or course";
   const col=has?courseColor(C):"var(--dim)";$("#courseDot").style.background=col;$("#courseDot").style.boxShadow=has?`0 0 8px ${col}`:"none";
 }
 let db=null, uid=null, progRef=null, quizRef=null, canSave=false;
@@ -583,8 +593,8 @@ function makeWriter(getRef,getBody){
   return {schedule(ms=500){clearTimeout(timer);timer=setTimeout(flush,ms)},dirty:()=>inflight||timer!==null};
 }
 let progDirty=false;
-const progWriter=makeWriter(()=>progRef,()=>{if(C&&isEnrolled(C.id))stashCourse();return {current:allProg.current,enrolled:allProg.enrolled,courses:allProg.courses}});
-const quizWriter=makeWriter(()=>quizRef,()=>{quiz.attempts=quiz.attempts.slice(-200);if(C&&isEnrolled(C.id))stashCourse();return {courses:allQuiz.courses}});
+const progWriter=makeWriter(()=>progRef,()=>{stashCourse();return {v:2,current:allProg.current,enrolled:allProg.enrolled,plans:allProg.plans,lessons:allProg.lessons}});
+const quizWriter=makeWriter(()=>quizRef,()=>{quiz.attempts=quiz.attempts.slice(-500);stashCourse();return {v:2,attempts:allQuiz.attempts}});
 
 /* ---------- derived ---------- */
 function stats(){
@@ -596,7 +606,7 @@ function stats(){
   let streak=0,i=Math.min(ti,NDAYS-1);
   if(i>=0&&!state.days[DAYS[i].key]?.done)i--;
   while(i>=0&&state.days[DAYS[i].key]?.done){streak++;i--}
-  const best={};quiz.attempts.forEach(a=>{const p=Math.round(100*a.score/a.total);if(best[a.week]==null||p>best[a.week])best[a.week]=p});
+  const best={};quiz.attempts.forEach(a=>{if(!QUIZ[a.topic])return;const p=Math.round(100*a.score/a.total);if(best[a.topic]==null||p>best[a.topic])best[a.topic]=p});
   const bestVals=Object.values(best);
   const quizAvg=bestVals.length?Math.round(bestVals.reduce((a,b)=>a+b,0)/bestVals.length):null;
   return {done:done.length,hours,ti,expected,streak,best,quizAvg,pct:Math.round(100*done.length/NDAYS)};
@@ -617,12 +627,12 @@ function renderDashboard(){
       el("h1",{text:`Your plan starts ${parseD(state.startDate).toLocaleDateString(undefined,{weekday:"long",day:"numeric",month:"long"})}`}),
       el("div",{class:"task"},[el("div",{class:"row"},[el("span",{class:"eyebrow",text:"Day 1"}),chip(d0.area),el("span",{class:"muted num",style:"font-size:12px",text:`${d0.hrs} h`})]),el("div",{class:"t",text:d0.topic}),
         el("div",{class:"row"},[go,el("a",{href:"#plan",class:"link",text:"Change start date →"})])]),
-      el("p",{class:"muted",style:"margin:14px 0 0;font-size:13px",text:"Before you begin: set up a local PostgreSQL copy of an Odoo database and keep the SQL guide open."}));
+      el("p",{class:"muted",style:"margin:14px 0 0;font-size:13px"},[document.createTextNode("Want a head start? "),el("a",{href:`#learn/${C.id}/${d0.key}`,text:"Read the first lesson now"}),document.createTextNode(".")]));
   }else if(ti>NDAYS-1){
     tp.append(el("div",{class:"eyebrow",text:"Plan finished"}),el("h1",{text:`${s.done} of ${NDAYS} days completed`}),el("p",{class:"muted",text:"Review weak areas and keep applying. Retake any quiz below 80%."}));
   }else{
     const d=DAYS[ti],rec=state.days[d.key]||{};
-    tp.append(el("div",{class:"eyebrow",text:`${greet()}Today · ${fmtD(todayD())} · Week ${d.w} · Day ${d.i+1} of ${NDAYS}`}),el("h1",{text:rec.done?"Today's session is done":"Today's session"}));
+    tp.append(el("div",{class:"eyebrow",text:`${greet()}Today · ${fmtD(todayD())} · ${d.area} · Day ${d.i+1} of ${NDAYS}`}),el("h1",{text:rec.done?"Today's session is done":"Today's session"}));
     const done=!!rec.done;
     const btn=el("button",{class:"btn",type:"button",text:done?"Mark as not done":"Mark today as done"});
     btn.disabled=!canSave;
@@ -630,11 +640,10 @@ function renderDashboard(){
     const task=el("div",{class:"task"},[
       el("div",{class:"row"},[chip(d.area),el("span",{class:"muted num",style:"font-size:12px",text:`${d.hrs} h planned`})]),
       el("div",{class:"t",text:d.topic}),
-      el("div",{class:"row"},[el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn primary",text:isReviewDay(d)?"Start review":"Start today's lesson"}),btn,el("a",{href:"#plan",class:"link",text:"Open in plan →"})])
+      el("div",{class:"row"},[el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn primary",text:d.type==="review"?"Start review":"Start today's lesson"}),btn,el("a",{href:"#plan",class:"link",text:"Open in plan →"})])
     ]);
     tp.append(task);
-    const qw=d.w; const hasQuiz=s.best[qw]!=null;
-    if(d.d===7&&!hasQuiz) tp.append(el("p",{class:"muted",style:"margin:12px 0 0;font-size:13px"},[document.createTextNode("End of the week — "),el("a",{href:"#quizzes",text:`take the Week ${qw} quiz`}),document.createTextNode(".")]));
+    if(d.type==="review"&&QUIZ[d.tid]&&s.best[d.tid]==null) tp.append(el("p",{class:"muted",style:"margin:12px 0 0;font-size:13px"},[document.createTextNode("Course finished — "),el("a",{href:"#quizzes",text:`take the ${d.area} quiz`}),document.createTextNode(".")]));
   }
   // ring + pace
   const pct=s.pct;countTo($("#ringPct"),pct,"%");
@@ -652,7 +661,7 @@ function renderDashboard(){
   const quizzesTaken=Object.keys(s.best).length;
   $("#kpis").replaceChildren(
     kpi("Current week",`${curW}`,`/ ${NWEEKS}`,PLAN[curW-1][1]),
-    kpi("This week",`${wkDone}`,"/ 7 days",`${Math.round(100*wkDone/7)}% complete`),
+    kpi("This week",`${wkDone}`,`/ ${DAYS.filter(d=>d.w===curW).length} days`,`${Math.round(100*wkDone/Math.max(1,DAYS.filter(d=>d.w===curW).length))}% complete`),
     kpi("Hours studied",fmtH(s.hours),"h",`${Math.round(100*s.hours/TOTAL_PLANNED)}% of ${TOTAL_PLANNED} h planned`),
     kpi("Study streak",`${s.streak}`,s.streak===1?"day":"days","Consecutive plan days done"),
     kpi("Quiz average",s.quizAvg==null?"—":`${s.quizAvg}`,s.quizAvg==null?"":"%",`${quizzesTaken} of ${Object.keys(QUIZ).length} quizzes taken`));
@@ -664,14 +673,14 @@ function renderDashboard(){
   });
   // week columns
   const wc=$("#weekCols");wc.replaceChildren();wc.style.gridTemplateColumns=`repeat(${NWEEKS},1fr)`;
-  PLAN.forEach((w,wi)=>{const n=DAYS.filter(d=>d.w===wi+1&&state.days[d.key]?.done).length,p=Math.round(100*n/7);
-    wc.append(el("div",{class:"wk"+(Math.floor(ti/7)===wi?" now":""),title:`Week ${wi+1}: ${n}/7 days`},[el("div",{class:"col"},[el("span",{style:`height:${p}%;--c:${AREAS[w[0]].color}`})]),el("small",{text:`W${wi+1}`})]))});
+  PLAN.forEach((w,wi)=>{const wds=DAYS.filter(d=>d.w===wi+1),n=wds.filter(d=>state.days[d.key]?.done).length,p=Math.round(100*n/wds.length);
+    wc.append(el("div",{class:"wk"+(Math.floor(ti/7)===wi?" now":""),title:`Week ${wi+1}: ${n}/${wds.length} days · ${w[1]}`},[el("div",{class:"col"},[el("span",{style:`height:${p}%;--c:${AREAS[w[0]].color}`})]),el("small",{text:`W${wi+1}`})]))});
   // heatmap
   const hm=$("#heat");hm.replaceChildren(el("span"));
   hm.style.gridTemplateColumns=`auto repeat(${NWEEKS},1fr)`;
   for(let w=1;w<=NWEEKS;w++)hm.append(el("span",{class:"num",style:"text-align:center",text:String(w)}));
   for(let d=0;d<7;d++){hm.append(el("span",{text:wd(d)}));
-    for(let w=0;w<NWEEKS;w++){const day=DAYS[w*7+d],r=state.days[day.key]||{},h=+r.hours||0;
+    for(let w=0;w<NWEEKS;w++){const day=DAYS[w*7+d];if(!day){hm.append(el("span"));continue}const r=state.days[day.key]||{},h=+r.hours||0;
       const l=h<=0?(r.done?1:0):h<1?1:h<2?2:h<4?3:4;
       const c=el("span",{class:"cell"+(day.i===ti?" today":""),"data-l":String(l),title:`${fmtD(dayDate(day.i))} · ${day.topic} · ${h?fmtH(h)+" h":"no hours"}${r.done?" · done":""}`});hm.append(c)}}
   drawCharts(s);
@@ -702,9 +711,9 @@ function drawCharts(s){
   const bl=DAYS.map(d=>fmtD(dayDate(d.i)));let c=0;
   const act=DAYS.map(d=>{if(d.i>s.ti)return null;if(state.days[d.key]?.done)c++;return c});
   const plan=DAYS.map(d=>d.i+1);
-  upsert("cBurn",{type:"line",data:{labels:bl,datasets:[{label:"Plan",data:plan,borderColor:dim,borderDash:[5,4],pointRadius:0,borderWidth:1.5},{label:"Done",data:act,borderColor:good,backgroundColor:"rgba(63,214,155,.10)",fill:true,pointRadius:0,tension:.25,borderWidth:2}]},options:{...base,interaction:{mode:"index",intersect:false},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:7,maxRotation:0}},y:{beginAtZero:true,max:84,grid:{color:grid},title:{display:true,text:"days"}}}}});
-  const qs=PLAN.map((_,i)=>s.best[i+1]??null);
-  upsert("cQuiz",{type:"line",data:{labels,datasets:[{label:"Best score",data:qs,borderColor:accent,backgroundColor:qs.map(v=>v==null?accent:v>=80?good:v>=60?css("--warn"):css("--bad")),pointRadius:5,pointHoverRadius:7,spanGaps:true,borderWidth:2,tension:.2},{label:"Target 80%",data:labels.map(()=>80),borderColor:dim,borderDash:[4,4],pointRadius:0,borderWidth:1}]},options:{...base,scales:{x:{grid:{display:false}},y:{min:0,max:100,grid:{color:grid},ticks:{callback:v=>v+"%"}}}}});
+  upsert("cBurn",{type:"line",data:{labels:bl,datasets:[{label:"Plan",data:plan,borderColor:dim,borderDash:[5,4],pointRadius:0,borderWidth:1.5},{label:"Done",data:act,borderColor:good,backgroundColor:"rgba(63,214,155,.10)",fill:true,pointRadius:0,tension:.25,borderWidth:2}]},options:{...base,interaction:{mode:"index",intersect:false},scales:{x:{grid:{display:false},ticks:{maxTicksLimit:7,maxRotation:0}},y:{beginAtZero:true,max:NDAYS,grid:{color:grid},title:{display:true,text:"days"}}}}});
+  const qids=Object.keys(QUIZ),qlabels=qids.map(t=>TOPIC[t].title),qs=qids.map(t=>s.best[t]??null);
+  upsert("cQuiz",{type:"line",data:{labels:qlabels,datasets:[{label:"Best score",data:qs,borderColor:accent,backgroundColor:qs.map(v=>v==null?accent:v>=80?good:v>=60?css("--warn"):css("--bad")),pointRadius:5,pointHoverRadius:7,spanGaps:true,borderWidth:2,tension:.2},{label:"Target 80%",data:qlabels.map(()=>80),borderColor:dim,borderDash:[4,4],pointRadius:0,borderWidth:1}]},options:{...base,scales:{x:{grid:{display:false},ticks:{maxRotation:0,autoSkip:true,callback(v){const l=this.getLabelForValue(v);return l.length>12?l.slice(0,11)+"…":l}}},y:{min:0,max:100,grid:{color:grid},ticks:{callback:v=>v+"%"}}}}});
 }
 function upsert(id,cfg){
   const cv=document.getElementById(id);if(!cv)return;
@@ -715,20 +724,21 @@ function upsert(id,cfg){
 /* ---------- plan ---------- */
 let planBuilt=false;
 function renderPlan(){
-  $("#planEyebrow").textContent=`${C.title} · ${NWEEKS}-week plan · ${WEEK_HRS} h per week`;
+  $("#planEyebrow").textContent=`${C.title} · ${C.courses.length} course${C.courses.length>1?"s":""} · ${NDAYS} lessons · ${WEEK_HRS} h per week`;
   $("#startDate").value=state.startDate;
   const list=$("#weeksList");
-  const ti=todayIndex(),curW=Math.floor(ti/7)+1;
+  const ti=todayIndex();
   const openSet=new Set([...list.querySelectorAll("details[open]")].map(d=>d.dataset.w));
   list.replaceChildren();
-  PLAN.forEach((w,wi)=>{
-    const wn=wi+1,ds=DAYS.filter(d=>d.w===wn),n=ds.filter(d=>state.days[d.key]?.done).length,hrs=ds.reduce((a,d)=>a+(+state.days[d.key]?.hours||0),0);
-    const det=el("details",{class:"week","data-w":String(wn)});
-    if(planBuilt?openSet.has(String(wn)):wn===(ti<0?1:Math.max(1,Math.min(NWEEKS,curW))))det.open=true;
+  const curTid=(DAYS[Math.max(0,Math.min(NDAYS-1,ti))]||DAYS[0]).tid;
+  C.courses.forEach((tid,ci)=>{
+    const t=TOPIC[tid],ds=DAYS.filter(d=>d.tid===tid),n=ds.filter(d=>state.days[d.key]?.done).length,hrs=ds.reduce((a,d)=>a+(+state.days[d.key]?.hours||0),0);
+    const det=el("details",{class:"week","data-w":tid});
+    if(planBuilt?openSet.has(tid):tid===curTid)det.open=true;
     det.append(el("summary",{},[
-      el("span",{class:"wnum",text:String(wn).padStart(2,"0")}),
-      el("div",{class:"wtitle"},[el("b",{text:w[1]}),el("div",{class:"row"},[chip(w[0]),el("span",{class:"muted",style:"font-size:12px",text:`${fmtD(dayDate(wi*7))} – ${fmtD(dayDate(wi*7+6))}`})])]),
-      el("div",{class:"wmeta"},[el("span",{class:"num",text:`${n}/7 · ${fmtH(hrs)} h`}),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${Math.round(100*n/7)}%;--c:${AREAS[w[0]].color}`})])]),
+      el("span",{class:"wnum",text:String(ci+1).padStart(2,"0")}),
+      el("div",{class:"wtitle"},[el("b",{text:t.title}),el("div",{class:"row"},[el("span",{class:"muted",style:"font-size:12px",text:`${ds.length} lessons · ${fmtD(dayDate(ds[0].i))} – ${fmtD(dayDate(ds[ds.length-1].i))}`})])]),
+      el("div",{class:"wmeta"},[el("span",{class:"num",text:`${n}/${ds.length} · ${fmtH(hrs)} h`}),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${Math.round(100*n/ds.length)}%;--c:${t.color}`})])]),
       el("span",{class:"caret",html:'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4.5 2.5 8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>'})
     ]));
     const tb=el("tbody");
@@ -744,7 +754,7 @@ function renderPlan(){
         el("td",{},[cb]),el("td",{class:"num muted",style:"white-space:nowrap",text:`${wd(d.i)} ${fmtD(dayDate(d.i))}`}),
         el("td",{class:"topic"},[el("a",{href:`#learn/${C.id}/${d.key}`,class:"tlink",text:d.topic})]),el("td",{class:"num muted",text:`${d.hrs} h`}),el("td",{},[hi]),el("td",{},[ni])]));
     });
-    det.append(el("div",{class:"days"},[el("table",{},[el("thead",{},[el("tr",{},["Done","Day","Topic","Plan","Hours","Notes"].map(h=>el("th",{text:h})))]),tb])]));
+    det.append(el("div",{class:"days"},[el("table",{},[el("thead",{},[el("tr",{},["Done","Day","Lesson","Plan","Hours","Notes"].map(h=>el("th",{text:h})))]),tb])]));
     list.append(det);
   });
   planBuilt=true;
@@ -757,7 +767,7 @@ function setDay(key,patch,ms=500){
   renderDashboardSoon();
 }
 function toggleDay(key,done){
-  logEvent(done?"day_done":"day_undone",C&&C.id,{key});
+  logEvent(done?"day_done":"day_undone",key.split(":")[0],{key,plan:C&&C.id});
   const d=DAYS.find(x=>x.key===key),r=state.days[key]||{};
   const patch={done};if(done){patch.doneAt=isoD(todayD());if(r.hours==null||r.hours==="")patch.hours=d.hrs}else{patch.doneAt=null}
   setDay(key,patch,300);renderPlanSoon();
@@ -768,41 +778,42 @@ function renderPlanSoon(){clearTimeout(rp);rp=setTimeout(()=>{if(current==="plan
 $("#resetBtn").addEventListener("click",e=>{
   const b=e.currentTarget;if(!canSave)return;
   if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Click again to clear everything";b.style.borderColor="var(--bad)";b.style.color="var(--bad)";
-    setTimeout(()=>{b.dataset.armed="";b.textContent="Clear all progress";b.style.borderColor="";b.style.color=""},4000);return}
-  b.dataset.armed="";b.textContent="Clear all progress";b.style.borderColor="";b.style.color="";
-  state.days={};progWriter.schedule(50);renderPlan();});
+    setTimeout(()=>{b.dataset.armed="";b.textContent="Clear this plan's progress";b.style.borderColor="";b.style.color=""},4000);return}
+  b.dataset.armed="";b.textContent="Clear this plan's progress";b.style.borderColor="";b.style.color="";
+  const keys=new Set(DAYS.map(d=>d.key));state.days=Object.fromEntries(Object.entries(state.days).filter(([k])=>!keys.has(k)));progWriter.schedule(50);renderPlan();});
 $("#startDate").addEventListener("change",e=>{if(!e.target.value||!canSave)return;state.startDate=e.target.value;progDirty=true;progWriter.schedule(200);renderPlan()});
 
-/* ---------- quizzes ---------- */
+/* ---------- quizzes (one per course) ---------- */
 function renderQuizHome(){
-  $("#quizEyebrow").textContent=`${C.title} · ${Object.keys(QUIZ).length} quizzes`;
+  $("#quizEyebrow").textContent=`${C.title} · ${Object.keys(QUIZ).length} quiz${Object.keys(QUIZ).length===1?"":"zes"}`;
   $("#quizRun").hidden=true;$("#quizHome").hidden=false;
   const s=stats(),g=$("#qgrid");g.replaceChildren();
-  PLAN.forEach((w,wi)=>{const wn=wi+1;if(!QUIZ[wn]||!QUIZ[wn].length)return;const best=s.best[wn],tries=quiz.attempts.filter(a=>a.week===wn).length;
+  Object.keys(QUIZ).forEach((tid,i)=>{const t=TOPIC[tid],best=s.best[tid],tries=quiz.attempts.filter(a=>a.topic===tid).length;
     const status=best==null?el("span",{class:"pill info",text:"Not taken"}):el("span",{class:"pill "+(best>=80?"good":best>=60?"warn":"bad"),text:best>=80?"Passed":"Retake"});
     const b=el("button",{class:best==null?"btn primary":"btn",type:"button",text:best==null?"Start quiz":"Retake"});
-    b.addEventListener("click",()=>startQuiz(wn));
+    b.addEventListener("click",()=>startQuiz(tid));
     g.append(el("div",{class:"panel qcard spot"+(best>=80?" passed":"")},[
-      el("div",{class:"top2"},[el("span",{class:"wbig",text:String(wn).padStart(2,"0")}),status]),
-      el("h3",{text:w[1]}),el("div",{},[chip(w[0])]),
+      el("div",{class:"top2"},[el("span",{class:"wbig",text:String(i+1).padStart(2,"0")}),status]),
+      el("h3",{text:t.title}),el("div",{class:"muted",style:"font-size:12px",text:`${QUIZ[tid].length} questions`}),
       el("div",{class:"bar"},[el("div",{class:"lab"},[el("span",{class:"muted",text:"Best score"}),el("span",{class:"num",text:best==null?"—":best+"%"})]),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${best||0}%;--c:var(${best>=80?"--good":best>=60?"--warn":"--bad"})`})])]),
       el("div",{class:"row end"},[el("span",{class:"muted",style:"font-size:12px",text:`${tries} attempt${tries===1?"":"s"}`}),b])
     ]));
   });
   const list=$("#attemptList");list.replaceChildren();
-  $("#attemptCount").textContent=quiz.attempts.length?`${quiz.attempts.length} total`:"";
-  if(!quiz.attempts.length){list.append(el("div",{class:"empty",text:"No attempts yet. Your results will appear here after your first quiz."}));return}
-  const rows=quiz.attempts.slice(-10).reverse().map(a=>{const p=Math.round(100*a.score/a.total);
-    return el("tr",{},[el("td",{class:"num muted",text:new Date(a.at).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}),el("td",{text:`Week ${a.week} · ${PLAN[a.week-1][1]}`}),el("td",{class:"num",text:`${a.score}/${a.total}`}),el("td",{},[el("span",{class:"pill "+(p>=80?"good":p>=60?"warn":"bad"),text:p+"%"})])])});
+  const mine=quiz.attempts.filter(a=>TOPIC[a.topic]);
+  $("#attemptCount").textContent=mine.length?`${mine.length} total`:"";
+  if(!mine.length){list.append(el("div",{class:"empty",text:"No attempts yet. Your results will appear here after your first quiz."}));return}
+  const rows=mine.slice(-10).reverse().map(a=>{const p=Math.round(100*a.score/a.total);
+    return el("tr",{},[el("td",{class:"num muted",text:new Date(a.at).toLocaleString(undefined,{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}),el("td",{text:TOPIC[a.topic].title}),el("td",{class:"num",text:`${a.score}/${a.total}`}),el("td",{},[el("span",{class:"pill "+(p>=80?"good":p>=60?"warn":"bad"),text:p+"%"})])])});
   list.append(el("div",{style:"overflow-x:auto"},[el("table",{style:"min-width:520px"},[el("thead",{},[el("tr",{},["When","Quiz","Score","Result"].map(h=>el("th",{text:h})))]),el("tbody",{},rows)])]));
 }
 function startQuiz(wn){
-  const qs=QUIZ[wn];const ans=new Array(qs.length).fill(null);
+  const qs=QUIZ[wn]||(TOPIC[wn]&&TOPIC[wn].quiz)||[];const ans=new Array(qs.length).fill(null);
   $("#quizHome").hidden=true;const run=$("#quizRun");run.hidden=false;run.replaceChildren();
   const back=el("button",{class:"btn",type:"button",text:"← All quizzes"});back.addEventListener("click",renderQuizHome);
   const wrap=el("div",{class:"quiz"});
   wrap.append(el("div",{class:"row",style:"justify-content:space-between"},[back,el("span",{class:"muted num",id:"qprog",text:`0 / ${qs.length} answered`})]),
-    el("div",{},[el("div",{class:"eyebrow",text:`Week ${wn} quiz`}),el("h1",{style:"font-size:28px;margin-top:6px",text:PLAN[wn-1][1]})]),
+    el("div",{},[el("div",{class:"eyebrow",text:"Course quiz"}),el("h1",{style:"font-size:28px;margin-top:6px",text:TOPIC[wn].title})]),
     el("div",{class:"qbar"},[el("span",{id:"qbarFill"})]));
   const cards=qs.map((q,qi)=>{
     const card=el("div",{class:"q"},[el("div",{class:"qn",text:`Question ${qi+1} of ${qs.length}`}),el("div",{class:"qt",html:q[0]})]);
@@ -821,12 +832,12 @@ function startQuiz(wn){
       const labs=card.querySelectorAll("label.opt");labs[q[2]].classList.add("right");if(!ok)labs[ans[qi]].classList.add("wrong");
       card.append(el("div",{class:"explain",html:(ok?"<b style=\"color:var(--good)\">Correct.</b> ":"<b style=\"color:var(--bad)\">Not quite.</b> ")+q[3]}))});
     const p=Math.round(100*score/qs.length);
-    quiz.attempts=[...quiz.attempts,{week:wn,score,total:qs.length,at:new Date().toISOString()}].slice(-200);
-    logEvent("quiz",C&&C.id,{week:wn,score,total:qs.length,pct:p});
+    quiz.attempts=[...quiz.attempts,{topic:wn,score,total:qs.length,at:new Date().toISOString()}].slice(-500);
+    logEvent("quiz",wn,{score,total:qs.length,pct:p,plan:C&&C.id});
     if(canSave)quizWriter.schedule(50);
     const again=el("button",{class:"btn",type:"button",text:"Retake"});again.addEventListener("click",()=>startQuiz(wn));
     const home=el("button",{class:"btn primary",type:"button",text:"Back to quizzes"});home.addEventListener("click",renderQuizHome);
-    const res=el("div",{class:"panel result beam"},[el("b",{class:"num",text:`${p}%`}),el("div",{},[el("div",{style:"font-weight:600",text:`${score} of ${qs.length} correct`}),el("div",{class:"muted",text:p>=80?"Passed. Move on to the next week.":"Below 80%. Re-read the weak topics and retake."+(canSave?"":"")})]),el("div",{class:"row",style:"margin-left:auto"},[again,home])]);
+    const res=el("div",{class:"panel result beam"},[el("b",{class:"num",text:`${p}%`}),el("div",{},[el("div",{style:"font-weight:600",text:`${score} of ${qs.length} correct`}),el("div",{class:"muted",text:p>=80?"Passed. Move on to the next course.":"Below 80%. Revise this course's cheat sheet and retake."})]),el("div",{class:"row",style:"margin-left:auto"},[again,home])]);
     wrap.insertBefore(res,wrap.children[3]);foot.remove();window.scrollTo({top:0,behavior:"smooth"});
   });
   run.append(wrap);window.scrollTo({top:0});
@@ -836,28 +847,31 @@ function startQuiz(wn){
 let userName="";
 function greet(){return userName?`Hi, ${userName.split(" ")[0]} · `:""}
 function courseStats(c){
-  const p=(C&&c.id===C.id)?{days:state.days,startDate:state.startDate}:(allProg.courses[c.id]||{});
-  const n=c.weeks.reduce((a,w)=>a+w[2].length,0);const done=Object.values(p.days||{}).filter(d=>d&&d.done).length;
-  return {n,done,pct:n?Math.round(100*done/n):0,start:p.startDate}}
+  const keys=c.courses.flatMap(tid=>TOPIC[tid].lessons.map(l=>`${tid}:${l[0]}`));
+  const days=(C&&state.days)||allProg.lessons||{};
+  const done=keys.filter(k=>days[k]&&days[k].done).length,n=keys.length;
+  return {n,done,pct:n?Math.round(100*done/n):0,start:(allProg.plans[c.id]||{}).startDate}}
 function renderCourses(){
   const g=$("#courseGrid");g.replaceChildren();
-  const mine=COURSES.filter(c=>isEnrolled(c.id)),other=COURSES.filter(c=>!isEnrolled(c.id));
-  $("#coursesIntro").textContent=mine.length?"Your courses are first. Join another any time; each keeps its own plan, progress and quiz scores.":"You haven't joined a course yet. Pick one below and choose when to start.";
+  const mine=PLANS.filter(c=>isEnrolled(c.id));
+  $("#coursesIntro").textContent=mine.length?"Your paths and courses are first. Progress is shared: a lesson done once counts everywhere.":"Pick a path (a ready-made set of courses for a role) or a single course, then choose when to start.";
   const card=c=>{
     const joined=isEnrolled(c.id),st=courseStats(c),col=courseColor(c),cur=joined&&C&&C.id===c.id;
-    const badge=el("span",{class:"cbadge",text:c.title.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase()});
-    const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:"Not joined"});
+    const badge=el("span",{class:"cbadge",text:c.title.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).map(w=>w[0]).join("").slice(0,2).toUpperCase()});
+    const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:c.kind==="path"?"Path":"Course"});
     const foot=el("div",{class:"row",style:"justify-content:flex-end"});
+    const meta=c.kind==="path"?`${c.courses.length} courses · ${st.n} lessons · about ${Math.ceil(st.n/7)} weeks`:`${st.n} lessons${TOPIC[c.topic].quiz&&TOPIC[c.topic].quiz.length?" · quiz":""}`;
     const kids=[el("div",{style:"display:flex;justify-content:space-between;align-items:center"},[badge,tag]),el("h3",{text:c.title}),el("p",{text:c.description||""}),
-      el("div",{class:"muted",style:"font-size:12px",text:`${c.weeks.length} weeks · ${st.n} days · ${Object.keys(c.quiz||{}).length} quizzes`})];
+      el("div",{class:"muted",style:"font-size:12px",text:meta})];
+    if(c.kind==="path")kids.push(el("div",{class:"cchips"},c.courses.map(tid=>el("span",{class:"chip",style:`--c:${TOPIC[tid].color}`},[el("i"),document.createTextNode(TOPIC[tid].title)]))));
+    if(st.done||joined)kids.push(el("div",{class:"bar"},[el("div",{class:"lab"},[el("span",{class:"muted",text:joined&&st.start?`Started ${fmtD(parseD(st.start))}`:"Progress"}),el("span",{class:"num",text:`${st.done}/${st.n} · ${st.pct}%`})]),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${st.pct}%;--c:${col}`})])]));
     if(joined){
-      kids.push(el("div",{class:"bar"},[el("div",{class:"lab"},[el("span",{class:"muted",text:st.start?`Started ${fmtD(parseD(st.start))}`:"Progress"}),el("span",{class:"num",text:`${st.done}/${st.n} · ${st.pct}%`})]),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${st.pct}%;--c:${col}`})])]));
       const leave=el("button",{class:"btn",type:"button",text:"Leave",style:"margin-right:auto"});leave.disabled=!canSave;
       leave.addEventListener("click",()=>{if(leave.dataset.armed!=="1"){leave.dataset.armed="1";leave.textContent="Click again to leave";leave.style.color="var(--bad)";leave.style.borderColor="var(--bad)";setTimeout(()=>{leave.dataset.armed="";leave.textContent="Leave";leave.style.color="";leave.style.borderColor=""},4000);return}leaveCourse(c.id)});
       const open=el("button",{class:cur?"btn":"btn primary",type:"button",text:cur?"Continue":"Open"});open.addEventListener("click",()=>switchCourse(c.id));
       foot.append(leave,open);
     }else{
-      const join=el("button",{class:"btn primary",type:"button",text:"Join course"});join.disabled=!canSave;
+      const join=el("button",{class:"btn primary",type:"button",text:c.kind==="path"?"Start this path":"Join course"});join.disabled=!canSave;
       join.addEventListener("click",()=>{
         const nm=nextMonday(),today=isoD(todayD());
         const pick=el("div",{class:"joinpick"},[el("div",{class:"eyebrow",text:"When do you want to start?"})]);
@@ -872,38 +886,40 @@ function renderCourses(){
     kids.push(foot);
     return el("div",{class:"panel spot ccard"+(cur?" cur":""),style:`--cc:${col}`},kids);
   };
-  if(mine.length){g.append(el("div",{class:"glabel",text:"My courses"}));mine.forEach(c=>g.append(card(c)))}
-  if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"Available courses":"Available courses"}));other.forEach(c=>g.append(card(c)))}
-  g.append(el("div",{class:"panel ccard add"},[el("h3",{text:"Add a course"}),
-    el("p",{html:"Copy <code>courses/_template.js</code>, fill in the weeks, topics and quiz questions, and add one <code>&lt;script&gt;</code> line for it in <code>index.html</code>. It shows up here after you push."})]));
+  if(mine.length){g.append(el("div",{class:"glabel",text:"Mine"}));mine.forEach(c=>g.append(card(c)))}
+  const paths=PATHS.filter(c=>!isEnrolled(c.id)),singles=PLANS.filter(c=>c.kind==="course"&&!isEnrolled(c.id));
+  if(paths.length){g.append(el("div",{class:"glabel",text:"Paths · a set of courses for a role"}));paths.forEach(c=>g.append(card(c)))}
+  if(singles.length){g.append(el("div",{class:"glabel",text:"Courses · study one topic"}));singles.forEach(c=>g.append(card(c)))}
 }
 
 /* ---------- lessons ---------- */
 window.STUDY_LESSONS=window.STUDY_LESSONS||{};
 const lessonFiles={};
-function loadLessonWeek(cid,w){
-  const k=`${cid}/w${w}`;if(lessonFiles[k])return lessonFiles[k];
-  lessonFiles[k]=new Promise(res=>{const sc=document.createElement("script");sc.src=`lessons/${cid}/w${w}.js`;sc.onload=()=>res(true);sc.onerror=()=>res(false);document.head.append(sc)});
-  return lessonFiles[k];
+function loadTopicLessons(tid){
+  if(lessonFiles[tid])return lessonFiles[tid];
+  lessonFiles[tid]=new Promise(res=>{const sc=document.createElement("script");sc.src=`lessons/${tid}.js`;sc.onload=()=>res(true);sc.onerror=()=>res(false);document.head.append(sc)});
+  return lessonFiles[tid];
 }
-const getLesson=(cid,key)=>window.STUDY_LESSONS[`${cid}:${key}`]||null;
-const isReviewDay=d=>/^Review\b|quiz$/i.test(d.topic)&&d.d===7;
+const getLesson=(_plan,key)=>window.STUDY_LESSONS[key]||null;
+const isReviewDay=d=>d.type==="review";
 function lessonLink(d,label){const a=el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn lbtn",text:label||"Open lesson"});return a}
 async function renderLesson(cid,key){
   const box=$("#lessonView");box.replaceChildren(el("div",{class:"muted",text:"Loading lesson…"}));
   if(!C||C.id!==cid){if(isEnrolled(cid))loadCourse(cid);else{location.hash="#courses";return}}
   const d=DAYS.find(x=>x.key===key);if(!d){location.hash="#plan";return}
-  await loadLessonWeek(cid,d.w);
+  await loadTopicLessons(d.tid);
   if(location.hash!==`#learn/${cid}/${key}`)return;
   const L=getLesson(cid,key),rec=state.days[key]||{};
   const prev=DAYS[d.i-1],next=DAYS[d.i+1];
-  const head=[el("div",{class:"row"},[el("a",{href:"#plan",class:"link",text:"← Plan"}),el("span",{class:"muted",text:"·"}),el("span",{class:"eyebrow",text:`${C.title} · Week ${d.w} · Day ${d.d}`}),chip(d.area)]),
+  const head=[el("div",{class:"row"},[el("a",{href:"#plan",class:"link",text:"← Plan"}),el("span",{class:"muted",text:"·"}),el("span",{class:"eyebrow",text:`${C.title} · Lesson ${d.i+1} of ${NDAYS}`}),chip(d.area)]),
     el("h1",{text:L&&L.title?L.title:d.topic})];
   const body=[];
   if(isReviewDay(d)){
-    body.push(el("div",{class:"oneline",text:"Review day. Read this week's cheat sheet, then take the quiz. Aim for 80% or more."}));
-    body.push(el("div",{class:"row"},[el("a",{href:`#revise`,class:"btn",text:"Open this week's cheat sheet",onclick:""}),el("a",{href:"#quizzes",class:"btn primary",text:`Take Week ${d.w} quiz`})]));
-    reviseWeekWanted=d.w;
+    const hasQ=!!(TOPIC[d.tid].quiz&&TOPIC[d.tid].quiz.length);
+    body.push(el("div",{class:"oneline",text:`Review: ${d.area}. Read the cheat sheet${hasQ?", then take the quiz. Aim for 80% or more.":"."}`}));
+    const qb=el("button",{class:"btn primary",type:"button",text:`Take the ${d.area} quiz`});qb.addEventListener("click",()=>{location.hash="#quizzes";setTimeout(()=>startQuiz(d.tid),60)});
+    body.push(el("div",{class:"row"},[el("a",{href:`#revise`,class:"btn",text:"Open the cheat sheet"}),hasQ?qb:null]));
+    reviseWeekWanted=d.tid;
   }else if(!L){
     body.push(el("div",{class:"notice",text:"The lesson for this day isn't written yet. It's coming soon. Meanwhile, ask Claude: \"Teach me: "+d.topic+"\" for a quick explanation."}));
   }else{
@@ -927,14 +943,14 @@ let reviseWeekWanted=null,reviseMode="sheet",cardIdx=0,cardFlip=false;
 async function renderRevise(){
   $("#reviseEyebrow").textContent=`${C.title} · Revision`;
   const sel=$("#reviseWeek");
-  if(sel.dataset.course!==C.id){sel.replaceChildren(...PLAN.map((w,i)=>el("option",{value:String(i+1),text:`Week ${i+1} · ${w[1]}`})));sel.dataset.course=C.id;
-    const ti=todayIndex();sel.value=String(Math.max(1,Math.min(NWEEKS,ti<0?1:Math.floor(ti/7)+1)))}
-  if(reviseWeekWanted){sel.value=String(reviseWeekWanted);reviseWeekWanted=null}
-  const s=stats();const weak=Object.entries(s.best).filter(([w,p])=>p<80).map(([w])=>+w);
+  if(sel.dataset.course!==C.id){sel.replaceChildren(...C.courses.map((tid,i)=>el("option",{value:tid,text:`${i+1}. ${TOPIC[tid].title}`})));sel.dataset.course=C.id;
+    const ti=todayIndex();sel.value=(DAYS[Math.max(0,Math.min(NDAYS-1,ti))]||DAYS[0]).tid}
+  if(reviseWeekWanted){sel.value=reviseWeekWanted;reviseWeekWanted=null}
+  const s=stats();const weak=Object.entries(s.best).filter(([w,p])=>p<80).map(([w])=>w);
   const wn=$("#weakNote");wn.hidden=!weak.length;
-  if(weak.length){wn.replaceChildren(document.createTextNode("Weak weeks (quiz below 80%): "),...weak.flatMap((w,i)=>{const a=el("a",{href:"#revise",text:`Week ${w}`});a.addEventListener("click",e=>{e.preventDefault();sel.value=String(w);renderRevise()});return i?[document.createTextNode(", "),a]:[a]}),document.createTextNode(". Revise these first."))}
-  const w=+sel.value;await loadLessonWeek(C.id,w);
-  const days=DAYS.filter(d=>d.w===w&&!isReviewDay(d));
+  if(weak.length){wn.replaceChildren(document.createTextNode("Weak courses (quiz below 80%): "),...weak.flatMap((w,i)=>{const a=el("a",{href:"#revise",text:TOPIC[w].title});a.addEventListener("click",e=>{e.preventDefault();sel.value=w;renderRevise()});return i?[document.createTextNode(", "),a]:[a]}),document.createTextNode(". Revise these first."))}
+  const w=sel.value;await loadTopicLessons(w);
+  const days=DAYS.filter(d=>d.tid===w&&!isReviewDay(d));
   const items=days.map(d=>({d,L:getLesson(C.id,d.key)}));
   $("#modeSheet").className=reviseMode==="sheet"?"btn primary":"btn";$("#modeCards").className=reviseMode==="cards"?"btn primary":"btn";
   const body=$("#reviseBody");body.replaceChildren();
@@ -943,11 +959,11 @@ async function renderRevise(){
     items.forEach(({d,L})=>sh.append(el("div",{class:"panel item"},[el("b",{text:L&&L.title?L.title:d.topic}),
       L?el("ul",{},[el("li",{html:L.one}),...(L.remember||[]).map(x=>el("li",{html:x}))]):el("div",{class:"muted",style:"font-size:13px",text:"Lesson coming soon."}),
       el("a",{href:`#learn/${C.id}/${d.key}`,class:"link",style:"font-size:12px;margin-top:8px;display:inline-block",text:"Open full lesson →"})])));
-    sh.append(el("div",{class:"row"},[el("a",{href:"#quizzes",class:"btn primary",text:`Take Week ${w} quiz`})]));
+    if(QUIZ[w]){const qb=el("button",{class:"btn primary",type:"button",text:`Take the ${TOPIC[w].title} quiz`});qb.addEventListener("click",()=>{location.hash="#quizzes";setTimeout(()=>startQuiz(w),60)});sh.append(el("div",{class:"row"},[qb]))}
     body.append(sh);
   }else{
     const cards=items.filter(x=>x.L).flatMap(({d,L})=>[{q:L.title||d.topic,a:[L.one,...(L.remember||[])]}]);
-    if(!cards.length){body.append(el("div",{class:"empty",text:"No flashcards yet for this week."}));return}
+    if(!cards.length){body.append(el("div",{class:"empty",text:"No flashcards yet for this course."}));return}
     cardIdx=Math.min(cardIdx,cards.length-1);const c=cards[cardIdx];
     const card=el("div",{class:"panel fcard",tabindex:"0"},[cardFlip?el("div",{},[...c.a.map(x=>el("div",{html:x,style:"margin:4px 0;font-size:15px"}))]):el("div",{},[el("b",{text:c.q}),el("div",{class:"hint",text:"Say the answer out loud, then tap to check"})])]);
     const flip=()=>{cardFlip=!cardFlip;renderRevise()};card.addEventListener("click",flip);card.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}});
@@ -969,24 +985,24 @@ function logEvent(type,course_id,meta){
 
 /* ---------- admin ---------- */
 let isAdmin=false, adminData=null, adminOpenUser=null;
-const EVT={visit:["opened the app","var(--dim)"],join:["joined","var(--good)"],leave:["left","var(--bad)"],day_done:["completed","var(--accent)"],day_undone:["unticked","var(--warn)"],quiz:["took a quiz in","var(--a-rag)"]};
+const EVT={visit:["opened the app","var(--dim)"],join:["joined","var(--good)"],leave:["left","var(--bad)"],day_done:["completed","var(--accent)"],day_undone:["unticked","var(--warn)"],quiz:["took","var(--a-rag)"]};
 const ago=t=>{const s=(Date.now()-new Date(t))/1000;if(s<60)return"just now";if(s<3600)return`${Math.floor(s/60)} min ago`;if(s<86400)return`${Math.floor(s/3600)} h ago`;const d=Math.floor(s/86400);return d<30?`${d} day${d>1?"s":""} ago`:new Date(t).toLocaleDateString(undefined,{day:"numeric",month:"short"})};
-const cTitle=id=>(COURSES.find(c=>c.id===id)||{}).title||id||"—";
+const cTitle=id=>(PLANS.find(c=>c.id===id)||{}).title||(TOPIC[id]||{}).title||id||"—";
 function userSummary(u){
   const p=u.progress||{},q=u.quizzes||{};
-  const enrolled=Array.isArray(p.enrolled)?p.enrolled:Object.keys(p.courses||{});
-  let done=0,total=0,hours=0;const per={};
-  enrolled.forEach(cid=>{const c=COURSES.find(x=>x.id===cid);const days=(p.courses&&p.courses[cid]&&p.courses[cid].days)||{};
-    const d=Object.values(days).filter(x=>x&&x.done).length,h=Object.values(days).reduce((a,x)=>a+(+x?.hours||0),0);
-    const n=c?c.weeks.reduce((a,w)=>a+w[2].length,0):0;done+=d;total+=n;hours+=h;
-    const at=(q.courses&&q.courses[cid]&&q.courses[cid].attempts)||[];
-    const best={};at.forEach(a=>{const pc=Math.round(100*a.score/a.total);if(best[a.week]==null||pc>best[a.week])best[a.week]=pc});
-    per[cid]={done:d,n,hours:h,start:p.courses?.[cid]?.startDate,attempts:at.length,best};});
-  const attempts=Object.values(q.courses||{}).flatMap(c=>c.attempts||[]);
+  const lessons=p.lessons||{},enrolled=Array.isArray(p.enrolled)?p.enrolled.filter(id=>PLANS.some(x=>x.id===id)):[];
+  const attempts=(q.attempts||[]).filter(a=>TOPIC[a.topic]);
+  const per={};let done=0,total=0,hours=0;
+  enrolled.forEach(pid=>{const pl=PLANS.find(x=>x.id===pid);const keys=pl.courses.flatMap(t=>TOPIC[t].lessons.map(l=>`${t}:${l[0]}`));
+    const d=keys.filter(k=>lessons[k]&&lessons[k].done).length,h=keys.reduce((a,k)=>a+(+lessons[k]?.hours||0),0);
+    const best={};attempts.filter(a=>pl.courses.includes(a.topic)).forEach(a=>{const pc=Math.round(100*a.score/a.total);if(best[a.topic]==null||pc>best[a.topic])best[a.topic]=pc});
+    per[pid]={done:d,n:keys.length,hours:h,start:p.plans?.[pid]?.startDate,attempts:attempts.filter(a=>pl.courses.includes(a.topic)).length,best};});
+  done=Object.values(lessons).filter(x=>x&&x.done).length;hours=Object.values(lessons).reduce((a,x)=>a+(+x?.hours||0),0);
+  total=Object.values(per).reduce((a,x)=>Math.max(a,x.n),0)||0;
   const qavg=attempts.length?Math.round(attempts.reduce((a,x)=>a+100*x.score/x.total,0)/attempts.length):null;
   const passed=attempts.some(a=>a.score/a.total>=.8);
   const last=[u.last_activity,u.updated_at,u.last_sign_in_at].filter(Boolean).sort().pop()||u.created_at;
-  return {enrolled,done,total,hours,pct:total?Math.round(100*done/total):0,attempts,qavg,passed,per,last};
+  return {enrolled,done,total:Math.max(total,done),hours,pct:total?Math.min(100,Math.round(100*done/total)):0,attempts,qavg,passed,per,last};
 }
 async function loadAdmin(){
   const msg=$("#adminMsg");msg.hidden=true;
@@ -1032,18 +1048,16 @@ function renderAdmin(){
     upsert("cAdminDaily",{type:"line",data:{labels,datasets:[{label:"Active users",data:active,borderColor:css("--accent"),backgroundColor:"rgba(123,140,255,.12)",fill:true,tension:.3,pointRadius:0,borderWidth:2},{label:"Days completed",data:done,borderColor:css("--good"),tension:.3,pointRadius:0,borderWidth:2}]},options:{...base,interaction:{mode:"index",intersect:false}}});
     upsert("cAdminSignups",{type:"bar",data:{labels,datasets:[{label:"Sign-ups",data:signups,backgroundColor:css("--accent2"),borderRadius:4}]},options:{...base,plugins:{legend:{display:false}}}});
     // quiz by week: course with most attempts
-    const att=[];users.forEach(u=>Object.entries((u.quizzes||{}).courses||{}).forEach(([cid,c])=>(c.attempts||[]).forEach(a=>att.push({cid,...a}))));
-    const counts={};att.forEach(a=>counts[a.cid]=(counts[a.cid]||0)+1);
-    const qc=Object.keys(counts).sort((a,b)=>counts[b]-counts[a])[0]||(COURSES[0]&&COURSES[0].id);const qcourse=COURSES.find(c=>c.id===qc);
-    $("#quizCourseSub").textContent=qcourse?`${qcourse.title} · average of all attempts`:"No attempts yet";
-    const wk=qcourse?qcourse.weeks.map((_,i)=>i+1):[];
-    const avg=wk.map(w=>{const xs=att.filter(a=>a.cid===qc&&a.week===w);return xs.length?Math.round(xs.reduce((s,a)=>s+100*a.score/a.total,0)/xs.length):null});
-    upsert("cAdminQuiz",{type:"bar",data:{labels:wk.map(w=>`W${w}`),datasets:[{label:"Average score",data:avg,backgroundColor:avg.map(v=>v==null?"rgba(255,255,255,.06)":v>=80?css("--good"):v>=60?css("--warn"):css("--bad")),borderRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{...base.scales,y:{min:0,max:100,grid:{color:grid},ticks:{callback:v=>v+"%"}}}}});
+    const att=[];users.forEach(u=>((u.quizzes||{}).attempts||[]).forEach(a=>{if(TOPIC[a.topic])att.push(a)}));
+    const tids=[...new Set(att.map(a=>a.topic))];
+    $("#quizCourseSub").textContent=tids.length?"Average of all attempts per course":"No attempts yet";
+    const avg=tids.map(t=>{const xs=att.filter(a=>a.topic===t);return Math.round(xs.reduce((s,a)=>s+100*a.score/a.total,0)/xs.length)});
+    upsert("cAdminQuiz",{type:"bar",data:{labels:tids.map(t=>TOPIC[t].title),datasets:[{label:"Average score",data:avg,backgroundColor:avg.map(v=>v==null?"rgba(255,255,255,.06)":v>=80?css("--good"):v>=60?css("--warn"):css("--bad")),borderRadius:4}]},options:{...base,plugins:{legend:{display:false}},scales:{...base.scales,y:{min:0,max:100,grid:{color:grid},ticks:{callback:v=>v+"%"}}}}});
   }
   // courses table
-  const ct=el("table",{style:"min-width:640px"});ct.append(el("thead",{},[el("tr",{},["Course","Joined","Started","Avg progress","Days done","Quiz attempts","Avg quiz"].map(h=>el("th",{text:h})))]));
+  const ct=el("table",{style:"min-width:640px"});ct.append(el("thead",{},[el("tr",{},["Path / course","Joined","Started","Avg progress","Lessons done","Quiz attempts","Avg quiz"].map(h=>el("th",{text:h})))]));
   const cb=el("tbody");
-  COURSES.forEach(c=>{const us=users.filter(u=>S.get(u.id).enrolled.includes(c.id)).map(u=>S.get(u.id).per[c.id]||{done:0,n:1,attempts:0,best:{}});
+  PLANS.filter(c=>c.kind==="path"||users.some(u=>S.get(u.id).enrolled.includes(c.id))).forEach(c=>{const us=users.filter(u=>S.get(u.id).enrolled.includes(c.id)).map(u=>S.get(u.id).per[c.id]||{done:0,n:1,attempts:0,best:{}});
     const started=us.filter(x=>x.done>0).length,avgp=us.length?Math.round(us.reduce((a,x)=>a+100*x.done/(x.n||1),0)/us.length):0;
     const bests=us.flatMap(x=>Object.values(x.best));const aq=bests.length?Math.round(bests.reduce((a,b)=>a+b,0)/bests.length)+"%":"—";
     cb.append(el("tr",{},[el("td",{},[el("span",{class:"chip",style:`--c:${courseColor(c)}`},[el("i"),document.createTextNode(c.title)])]),el("td",{class:"num",text:String(us.length)}),el("td",{class:"num",text:String(started)}),
@@ -1058,8 +1072,8 @@ function renderAdmin(){
   if(!recent.length)fd.append(el("div",{class:"empty",text:"No activity yet. Events appear here as people use the app."}));
   recent.forEach(a=>{const [verb,col]=EVT[a.type]||[a.type,"var(--dim)"];
     let what=a.type==="visit"?"":cTitle(a.course_id);
-    if(a.type==="day_done"||a.type==="day_undone")what=`day ${a.meta?.key||""} · ${cTitle(a.course_id)}`;
-    if(a.type==="quiz")what=`${cTitle(a.course_id)} · week ${a.meta?.week} · ${a.meta?.pct}%`;
+    if(a.type==="day_done"||a.type==="day_undone"){const k=a.meta?.key||"";const [t,l]=k.split(":");const les=TOPIC[t]&&TOPIC[t].lessons.find(x=>x[0]===l);what=`${les?les[1]:k} · ${cTitle(a.course_id)}`}
+    if(a.type==="quiz")what=`the ${cTitle(a.course_id)} quiz · ${a.meta?.pct}%`;
     fd.append(el("div",{class:"fitem"},[el("span",{class:"dot",style:`--c:${col}`}),el("div",{},[el("span",{text:`${names.get(a.user_id)||"Someone"} ${verb} ${what}`.trim()}),el("small",{text:ago(a.at)})])]))});
 }
 function renderAdminUsers(S){
@@ -1076,7 +1090,7 @@ function renderAdminUsers(S){
       el("td",{class:"num muted",text:new Date(u.created_at).toLocaleDateString(undefined,{day:"numeric",month:"short"})}),
       el("td",{class:"muted",text:ago(s.last)}),
       el("td",{text:s.enrolled.length?s.enrolled.map(cTitle).join(", "):"—"}),
-      el("td",{},[el("div",{class:"row",style:"flex-wrap:nowrap"},[el("div",{class:"track",style:"width:70px"},[el("div",{class:"fill",style:`width:${s.pct}%`})]),el("span",{class:"num muted",text:`${s.done}/${s.total||0}`})])]),
+      el("td",{},[el("div",{class:"row",style:"flex-wrap:nowrap"},[el("div",{class:"track",style:"width:70px"},[el("div",{class:"fill",style:`width:${s.pct}%`})]),el("span",{class:"num muted",text:`${s.done} lessons`})])]),
       el("td",{class:"num",text:s.qavg==null?"—":s.qavg+"%"}),
       el("td",{},[el("span",{class:"pill "+status[1],text:status[0]})])]);
     const toggle=()=>{adminOpenUser=adminOpenUser===u.id?null:u.id;renderAdminUsers(S)};
@@ -1119,8 +1133,8 @@ window.addEventListener("resize",moveInd);
 document.addEventListener("pointermove",e=>{const p=e.target.closest&&e.target.closest(".spot");if(!p)return;const r=p.getBoundingClientRect();p.style.setProperty("--mx",(e.clientX-r.left)+"px");p.style.setProperty("--my",(e.clientY-r.top)+"px")},{passive:true});
 
 /* ---------- boot ---------- */
-if(!COURSES.length){document.querySelector("main .wrap").replaceChildren(el("div",{class:"empty",text:"No courses found. Add a course file in the courses folder."}));booted();return}
-loadCourse(COURSES[0].id);
+if(!PLANS.length){document.querySelector("main .wrap").replaceChildren(el("div",{class:"empty",text:"No courses found. Check catalog/topics.js."}));booted();return}
+loadCourse(PLANS[0].id);
 route();
 (async()=>{
   const note=$("#authNote");
@@ -1180,7 +1194,7 @@ route();
   }
   async function onUser(user){
     if(!user){uid=null;canSave=false;userName="";isAdmin=false;adminData=null;$("#adminLink").hidden=true;$("#auth").hidden=false;$("#profile").hidden=true;closeMenu();setSync("idle","Signed out");
-      allProg={current:null,enrolled:[],courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();booted();return}
+      allProg={current:null,enrolled:[],plans:{},lessons:{}};allQuiz={attempts:[]};loadCourse(PLANS[0].id);route();booted();return}
     showUser(user);
     if(uid===user.id){booted();return}
     uid=user.id;$("#auth").hidden=true;
@@ -1188,10 +1202,15 @@ route();
     const {data,error}=await sb.from(T).select("progress,quizzes").eq("user_id",uid).maybeSingle();
     if(error){setSync("err","Couldn't load — reload the page");booted();return}
     const p=data?.progress||{},q=data?.quizzes||{};
-    allProg={current:p.current||null,enrolled:Array.isArray(p.enrolled)?p.enrolled.filter(id=>COURSES.some(c=>c.id===id)):[],courses:{...(p.courses||{})}};
-    allQuiz={courses:{...(q.courses||{})}};
+    if(p.v===2){
+      allProg={current:p.current||null,enrolled:(p.enrolled||[]).filter(id=>PLANS.some(c=>c.id===id)),plans:{...(p.plans||{})},lessons:{...(p.lessons||{})}};
+    }else{ // older format: keep joined paths that still exist, start lesson progress fresh
+      allProg={current:null,enrolled:(p.enrolled||[]).filter(id=>PATHS.some(c=>c.id===id)),plans:{},lessons:{}};
+      allProg.enrolled.forEach(id=>{allProg.plans[id]={startDate:(p.courses&&p.courses[id]&&p.courses[id].startDate)||nextMonday()}});
+    }
+    allQuiz={attempts:q.v===2?[...(q.attempts||[])]:[]};
     const startId=isEnrolled(allProg.current)?allProg.current:allProg.enrolled[0];
-    if(startId)loadCourse(startId);else{setCourse(COURSES[0].id);C=null;allProg.current=null;updatePicker()}
+    if(startId)loadCourse(startId);else{setCourse(PLANS[0].id);C=null;allProg.current=null;updatePicker()}
     canSave=true;setSync("ok","Synced");
     try{const r=await sb.rpc("is_admin");isAdmin=r.data===true}catch(e){isAdmin=false}
     $("#adminLink").hidden=!isAdmin;

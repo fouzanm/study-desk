@@ -9,7 +9,7 @@ A personal study platform: courses with a day-by-day plan, progress tracking, ch
 - **Your account:** sign up with your name, email and password. Your name and initials show in the top bar.
 - **Login and sync:** email and password login with Supabase. Your data follows you to every device.
 
-It's a static site (`index.html`, `config.js` and one file per course), so it needs no build step.
+It's a static site (`index.html`, `config.js` catalogue and lesson files), so it needs no build step.
 
 ## Setup (about 10 minutes)
 
@@ -47,17 +47,26 @@ In Supabase, open **Authentication → URL Configuration**, set **Site URL** to 
 
 Open the site, choose **Create account**, and sign in.
 
+## How courses work
+
+- **Courses** are single topics (SQL, RAG, Airflow…). They live in `catalog/topics.js`, each with an ordered list of lessons and a quiz.
+- **Paths** are bundles of courses for a role (FDE, AI Engineer, Software Engineer, Data Engineer). They live in `catalog/paths.js`.
+- **Lessons** load on demand from `lessons/<course-id>.js`. A lesson that isn't written yet shows "coming soon".
+- Progress is stored per lesson, so a lesson done in one path counts in every path that includes it.
+
 ## Add a course
 
-1. Copy `courses/_template.js` to a new file, for example `courses/system-design.js`.
-2. Give it a unique `id` and fill in its title, weeks, daily topics and quiz questions.
-3. In `index.html`, under `<script src="courses/fde.js"></script>`, add:
-   ```html
-   <script src="courses/system-design.js"></script>
+1. In `catalog/topics.js`, add an entry:
+   ```js
+   {"id":"terraform","title":"Terraform","color":"#56d6ff","description":"One sentence.",
+    "lessons":[["basics","What Terraform is"],["state","State and plans"],["review","Review + quiz","review"]],
+    "quiz":[["Question?",["A","B","C","D"],1,"Why B is right."]]}
    ```
-4. Commit and push. The course appears on the **Courses** page after the site redeploys.
+2. Optionally add it to a path in `catalog/paths.js`.
+3. Write the lessons in `lessons/terraform.js` (copy the shape of `lessons/sql.js`): each lesson has `title`, `one`, `learn`, `ex`, `try` and `remember`.
+4. Push. It appears on the Courses page after Netlify redeploys.
 
-Don't change a course's `id` after you start it: your progress is saved under that id.
+Never change a course or lesson `id` after people start it: progress is saved under those ids.
 
 ## Run locally
 
@@ -71,8 +80,9 @@ python3 -m http.server 8000
 | File | What it is |
 |---|---|
 | `index.html` | The app: dashboard, plan, quizzes, courses, login and sync |
-| `courses/fde.js` | The FDE Prep course (default) |
-| `courses/_template.js` | Starting point for a new course |
+| `catalog/topics.js` | All courses (topics) with lessons and quizzes |
+| `catalog/paths.js` | Paths: bundles of courses per role |
+| `lessons/*.js` | Lesson content, one file per course |
 | `config.js` | Your Supabase URL and anon key |
 | `supabase/schema.sql` | Table and access rules, run once |
 | `netlify.toml`, `vercel.json` | Hosting settings |

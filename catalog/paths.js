@@ -1,0 +1,7 @@
+// Paths: bundles of courses in a set order. Joining a path schedules its courses one after another.
+(window.STUDY_PATHS = window.STUDY_PATHS || []).push(
+{"id":"fde","title":"Forward Deployed Engineer","color":"#7b8cff","description":"For engineers who build and ship AI and integrations inside client businesses.","hoursPerDay":[2,2,2,2,2,4,2],"courses":["sql","python","apis","llm","agents","rag","evals","project-ai-agent","integration","project-integration-hub","system-design","client-skills","interview"]},
+{"id":"ai-engineer","title":"AI Engineer","color":"#c792ff","description":"Build and ship production LLM applications — what AI Engineer job posts actually ask for.","hoursPerDay":[2,2,2,2,2,4,2],"courses":["python","apis","llm","rag","evals","agents","ai-production","system-design","interview"]},
+{"id":"software-engineer","title":"Software Engineer","color":"#3fd69b","description":"Backend-focused software engineering: DSA, clean code, APIs, databases, system design, DevOps and Java.","hoursPerDay":[2,2,2,2,2,4,2],"courses":["dsa","clean-code","python","apis","sql","backend-data","system-design","devops","java-spring","interview"]},
+{"id":"data-engineer","title":"Data Engineer","color":"#56d6ff","description":"From SQL to production pipelines: modelling, dbt, Airflow, Spark, cloud, quality and streaming.","hoursPerDay":[2,2,2,2,2,4,2],"courses":["sql","de-foundations","data-modelling","dbt","airflow","spark","cloud-data","data-quality","kafka","project-data-pipeline","interview"]}
+);
