@@ -78,6 +78,12 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 .ccard p{margin:0;color:var(--muted);font-size:13px}
 .ccard.add{border-style:dashed;background:none}
 @media (max-width:600px){.pname,.coursepick span:nth-child(2){display:none}}
+/* boot splash */
+.splash{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);color:var(--muted);font-size:13px}
+body.booting .splash{display:flex}
+body.booting .top,body.booting main,body.booting .auth{visibility:hidden}
+.spin{width:22px;height:22px;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 /* login */
 .btn.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#f4f5f8;color:#14161c;border-color:#f4f5f8;font-weight:600;box-shadow:0 8px 24px -12px rgba(255,255,255,.35)}
 .btn.gbtn:hover{background:#fff;border-color:#fff;color:#0a0c12}
@@ -268,7 +274,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
 </head>
-<body>
+<body class="booting">
+<div class="splash" id="splash" aria-live="polite"><div class="logo" style="width:44px;height:44px;font-size:14px">SD</div><div class="spin" aria-hidden="true"></div><span>Loading Study Desk…</span></div>
 <header class="top">
   <div class="wrap">
     <div class="brand"><div class="logo">SD</div>Study Desk</div>
@@ -417,6 +424,8 @@ function setCourse(id){
 
 /* ---------- helpers ---------- */
 const $=s=>document.querySelector(s);
+const booted=()=>document.body.classList.remove("booting");
+setTimeout(booted,8000); // never hang on the splash
 const el=(tag,attrs={},kids=[])=>{const n=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==="text")n.textContent=v;else if(k==="html")n.innerHTML=v;else if(k==="style")n.setAttribute("style",v);else n.setAttribute(k,v)}for(const c of[].concat(kids))if(c!=null)n.append(c);return n};
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const DAYMS=864e5;
@@ -749,7 +758,7 @@ window.addEventListener("resize",moveInd);
 document.addEventListener("pointermove",e=>{const p=e.target.closest&&e.target.closest(".spot");if(!p)return;const r=p.getBoundingClientRect();p.style.setProperty("--mx",(e.clientX-r.left)+"px");p.style.setProperty("--my",(e.clientY-r.top)+"px")},{passive:true});
 
 /* ---------- boot ---------- */
-if(!COURSES.length){document.querySelector("main .wrap").replaceChildren(el("div",{class:"empty",text:"No courses found. Add a course file in the courses folder."}));return}
+if(!COURSES.length){document.querySelector("main .wrap").replaceChildren(el("div",{class:"empty",text:"No courses found. Add a course file in the courses folder."}));booted();return}
 loadCourse(COURSES[0].id);
 route();
 (async()=>{
@@ -757,7 +766,7 @@ route();
   const cfg=window.STUDY_CONFIG||{};
   if(typeof supabase==="undefined"||!cfg.SUPABASE_URL||cfg.SUPABASE_URL.includes("YOUR_")){
     setSync("err","Not configured");note.hidden=false;
-    note.textContent="Saving isn't set up yet. Add your Supabase URL and anon key to config.js (see README).";return}
+    note.textContent="Saving isn't set up yet. Add your Supabase URL and anon key to config.js (see README).";booted();return}
   const sb=supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);
   const T="study_state";
   const asErr=e=>({code:"unavailable",message:e.message});
@@ -810,19 +819,21 @@ route();
   }
   async function onUser(user){
     if(!user){uid=null;canSave=false;userName="";$("#auth").hidden=false;$("#profile").hidden=true;closeMenu();setSync("idle","Signed out");
-      allProg={current:null,courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();return}
+      allProg={current:null,courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();booted();return}
     showUser(user);
-    if(uid===user.id)return;
+    if(uid===user.id){booted();return}
     uid=user.id;$("#auth").hidden=true;
     setSync("idle","Loading your data…");
     const {data,error}=await sb.from(T).select("progress,quizzes").eq("user_id",uid).maybeSingle();
-    if(error){setSync("err","Couldn't load — reload the page");return}
+    if(error){setSync("err","Couldn't load — reload the page");booted();return}
     const p=data?.progress||{},q=data?.quizzes||{};
     allProg={current:p.current||null,courses:{...(p.courses||{})}};
     allQuiz={courses:{...(q.courses||{})}};
     loadCourse(allProg.current||COURSES[0].id);
-    canSave=true;setSync("ok","Synced");route();
+    canSave=true;setSync("ok","Synced");route();booted();
   }
+  const qp=new URLSearchParams(location.search+"&"+location.hash.slice(1));
+  if(qp.get("error_description")){$("#authMsg").className="authmsg err";$("#authMsg").textContent=qp.get("error_description").replace(/\+/g," ");history.replaceState(null,"",location.pathname)}
   const {data:{session}}=await sb.auth.getSession();
   await onUser(session?.user||null);
   // run outside the auth callback (supabase-js recommends not awaiting inside it)
