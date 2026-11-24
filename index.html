@@ -77,6 +77,9 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 .ccard h3{font-size:17px}
 .ccard p{margin:0;color:var(--muted);font-size:13px}
 .ccard.add{border-style:dashed;background:none}
+.glabel{grid-column:1/-1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.joinpick{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+.joinpick input{background:rgba(0,0,0,.3);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;flex:1;min-width:0}
 @media (max-width:600px){.pname,.coursepick span:nth-child(2){display:none}}
 /* boot splash */
 .splash{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);color:var(--muted);font-size:13px}
@@ -382,7 +385,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
   <section class="view" id="v-courses" hidden>
     <div style="display:grid;gap:16px">
       <div class="pagehead"><div><div class="eyebrow">Your library</div><h1>Courses</h1>
-        <p>Pick the course you're studying. Each course keeps its own plan, progress and quiz scores.</p></div></div>
+        <p id="coursesIntro">Pick the course you're studying. Each course keeps its own plan, progress and quiz scores.</p></div></div>
       <div class="qgrid" id="courseGrid"></div>
     </div>
   </section>
@@ -441,14 +444,35 @@ const todayIndex=()=>Math.round((todayD()-parseD(state.startDate))/DAYMS);
 function nextMonday(){const t=todayD(),k=(8-t.getDay())%7;return isoD(new Date(t.getTime()+k*DAYMS))}
 let state={startDate:nextMonday(),days:{}};
 let quiz={attempts:[]};
-let allProg={current:null,courses:{}}, allQuiz={courses:{}};
+let allProg={current:null,enrolled:[],courses:{}}, allQuiz={courses:{}};
+const isEnrolled=id=>allProg.enrolled.includes(id);
 function stashCourse(){if(!C)return;allProg.courses[C.id]={startDate:state.startDate,days:state.days};allQuiz.courses[C.id]={attempts:quiz.attempts}}
 function loadCourse(id){setCourse(id);allProg.current=C.id;const p=allProg.courses[C.id]||{},q=allQuiz.courses[C.id]||{};
   state={startDate:p.startDate||nextMonday(),days:{...(p.days||{})}};quiz={attempts:[...(q.attempts||[])]};
-  $("#courseName").textContent=C.title;$("#courseDot").style.background=courseColor(C);$("#courseDot").style.boxShadow=`0 0 8px ${courseColor(C)}`;
+  updatePicker();
   for(const k in charts){charts[k].destroy();delete charts[k]}planBuilt=false}
 function courseColor(c){return Object.values(c.areas||{})[0]||"#7b8cff"}
-function switchCourse(id){if(C&&C.id===id){location.hash="#dashboard";return}stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
+function switchCourse(id){if(C&&C.id===id&&isEnrolled(id)){location.hash="#dashboard";return}if(isEnrolled(C?.id))stashCourse();loadCourse(id);if(canSave){progWriter.schedule(50)}location.hash="#dashboard";route()}
+function joinCourse(id,startDate){
+  if(!canSave)return;
+  if(C&&isEnrolled(C.id))stashCourse();
+  allProg.enrolled=[...new Set([...allProg.enrolled,id])];
+  if(!allProg.courses[id])allProg.courses[id]={startDate,days:{}};else allProg.courses[id].startDate=startDate;
+  loadCourse(id);progWriter.schedule(50);location.hash="#dashboard";route();
+}
+function leaveCourse(id){
+  if(!canSave)return;
+  if(C&&C.id===id)stashCourse();
+  allProg.enrolled=allProg.enrolled.filter(x=>x!==id); // progress is kept; rejoining restores it
+  const next=allProg.enrolled[0];
+  if(next)loadCourse(next);else{allProg.current=null;C=null;setCourse(COURSES[0].id);C=null;updatePicker()}
+  progWriter.schedule(50);route();
+}
+function updatePicker(){
+  const has=C&&isEnrolled(C.id);
+  $("#courseName").textContent=has?C.title:"Join a course";
+  const col=has?courseColor(C):"var(--dim)";$("#courseDot").style.background=col;$("#courseDot").style.boxShadow=has?`0 0 8px ${col}`:"none";
+}
 let db=null, uid=null, progRef=null, quizRef=null, canSave=false;
 
 function setSync(s,t){$("#sync").dataset.s=s;$("#syncText").textContent=t}
@@ -473,8 +497,8 @@ function makeWriter(getRef,getBody){
   return {schedule(ms=500){clearTimeout(timer);timer=setTimeout(flush,ms)},dirty:()=>inflight||timer!==null};
 }
 let progDirty=false;
-const progWriter=makeWriter(()=>progRef,()=>{stashCourse();return {current:allProg.current,courses:allProg.courses}});
-const quizWriter=makeWriter(()=>quizRef,()=>{quiz.attempts=quiz.attempts.slice(-200);stashCourse();return {courses:allQuiz.courses}});
+const progWriter=makeWriter(()=>progRef,()=>{if(C&&isEnrolled(C.id))stashCourse();return {current:allProg.current,enrolled:allProg.enrolled,courses:allProg.courses}});
+const quizWriter=makeWriter(()=>quizRef,()=>{quiz.attempts=quiz.attempts.slice(-200);if(C&&isEnrolled(C.id))stashCourse();return {courses:allQuiz.courses}});
 
 /* ---------- derived ---------- */
 function stats(){
@@ -729,14 +753,39 @@ function courseStats(c){
   return {n,done,pct:n?Math.round(100*done/n):0,start:p.startDate}}
 function renderCourses(){
   const g=$("#courseGrid");g.replaceChildren();
-  COURSES.forEach(c=>{const st=courseStats(c),col=courseColor(c),cur=C&&C.id===c.id;
-    const b=el("button",{class:cur?"btn":"btn primary",type:"button",text:cur?"Continue":"Open course"});b.addEventListener("click",()=>switchCourse(c.id));
-    g.append(el("div",{class:"panel spot ccard"+(cur?" cur":""),style:`--cc:${col}`},[
-      el("div",{class:"top2",style:"display:flex;justify-content:space-between;align-items:center"},[el("span",{class:"cbadge",text:c.title.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase()}),cur?el("span",{class:"pill info",text:"Current"}):el("span")]),
-      el("h3",{text:c.title}),el("p",{text:c.description||""}),
-      el("div",{class:"muted",style:"font-size:12px",text:`${c.weeks.length} weeks · ${st.n} days · ${Object.keys(c.quiz||{}).length} quizzes`}),
-      el("div",{class:"bar"},[el("div",{class:"lab"},[el("span",{class:"muted",text:"Progress"}),el("span",{class:"num",text:`${st.done}/${st.n} · ${st.pct}%`})]),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${st.pct}%;--c:${col}`})])]),
-      el("div",{class:"row",style:"justify-content:flex-end"},[b])]))});
+  const mine=COURSES.filter(c=>isEnrolled(c.id)),other=COURSES.filter(c=>!isEnrolled(c.id));
+  $("#coursesIntro").textContent=mine.length?"Your courses are first. Join another any time; each keeps its own plan, progress and quiz scores.":"You haven't joined a course yet. Pick one below and choose when to start.";
+  const card=c=>{
+    const joined=isEnrolled(c.id),st=courseStats(c),col=courseColor(c),cur=joined&&C&&C.id===c.id;
+    const badge=el("span",{class:"cbadge",text:c.title.split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase()});
+    const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:"Not joined"});
+    const foot=el("div",{class:"row",style:"justify-content:flex-end"});
+    const kids=[el("div",{style:"display:flex;justify-content:space-between;align-items:center"},[badge,tag]),el("h3",{text:c.title}),el("p",{text:c.description||""}),
+      el("div",{class:"muted",style:"font-size:12px",text:`${c.weeks.length} weeks · ${st.n} days · ${Object.keys(c.quiz||{}).length} quizzes`})];
+    if(joined){
+      kids.push(el("div",{class:"bar"},[el("div",{class:"lab"},[el("span",{class:"muted",text:st.start?`Started ${fmtD(parseD(st.start))}`:"Progress"}),el("span",{class:"num",text:`${st.done}/${st.n} · ${st.pct}%`})]),el("div",{class:"track"},[el("div",{class:"fill",style:`width:${st.pct}%;--c:${col}`})])]));
+      const leave=el("button",{class:"btn",type:"button",text:"Leave",style:"margin-right:auto"});leave.disabled=!canSave;
+      leave.addEventListener("click",()=>{if(leave.dataset.armed!=="1"){leave.dataset.armed="1";leave.textContent="Click again to leave";leave.style.color="var(--bad)";leave.style.borderColor="var(--bad)";setTimeout(()=>{leave.dataset.armed="";leave.textContent="Leave";leave.style.color="";leave.style.borderColor=""},4000);return}leaveCourse(c.id)});
+      const open=el("button",{class:cur?"btn":"btn primary",type:"button",text:cur?"Continue":"Open"});open.addEventListener("click",()=>switchCourse(c.id));
+      foot.append(leave,open);
+    }else{
+      const join=el("button",{class:"btn primary",type:"button",text:"Join course"});join.disabled=!canSave;
+      join.addEventListener("click",()=>{
+        const nm=nextMonday(),today=isoD(todayD());
+        const pick=el("div",{class:"joinpick"},[el("div",{class:"eyebrow",text:"When do you want to start?"})]);
+        const opt=(label,date)=>{const b=el("button",{class:"btn",type:"button",text:label});b.addEventListener("click",()=>joinCourse(c.id,date));return b};
+        const row=el("div",{class:"row"},[opt("Today",today)]);if(nm!==today)row.append(opt(`Mon ${fmtD(parseD(nm))}`,nm));
+        const di=el("input",{type:"date",id:`join-${c.id}`,"aria-label":"Pick a start date"});di.value=nm;
+        const go=el("button",{class:"btn primary",type:"button",text:"Start on this date"});go.addEventListener("click",()=>{if(di.value)joinCourse(c.id,di.value)});
+        pick.append(row,el("div",{class:"row"},[di,go]));foot.replaceWith(pick);
+      });
+      foot.append(join);
+    }
+    kids.push(foot);
+    return el("div",{class:"panel spot ccard"+(cur?" cur":""),style:`--cc:${col}`},kids);
+  };
+  if(mine.length){g.append(el("div",{class:"glabel",text:"My courses"}));mine.forEach(c=>g.append(card(c)))}
+  if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"Available courses":"Available courses"}));other.forEach(c=>g.append(card(c)))}
   g.append(el("div",{class:"panel ccard add"},[el("h3",{text:"Add a course"}),
     el("p",{html:"Copy <code>courses/_template.js</code>, fill in the weeks, topics and quiz questions, and add one <code>&lt;script&gt;</code> line for it in <code>index.html</code>. It shows up here after you push."})]));
 }
@@ -745,6 +794,7 @@ function renderCourses(){
 let current="dashboard";
 function route(){
   const h=(location.hash||"#dashboard").slice(1);current=["dashboard","plan","quizzes","courses"].includes(h)?h:"dashboard";
+  if(current!=="courses"&&!(C&&isEnrolled(C.id))&&uid){current="courses";if(location.hash!=="#courses")history.replaceState(null,"","#courses")}
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==`v-${current}`);
   document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===current)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   moveInd();kpiN=0;
@@ -819,7 +869,7 @@ route();
   }
   async function onUser(user){
     if(!user){uid=null;canSave=false;userName="";$("#auth").hidden=false;$("#profile").hidden=true;closeMenu();setSync("idle","Signed out");
-      allProg={current:null,courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();booted();return}
+      allProg={current:null,enrolled:[],courses:{}};allQuiz={courses:{}};loadCourse(COURSES[0].id);route();booted();return}
     showUser(user);
     if(uid===user.id){booted();return}
     uid=user.id;$("#auth").hidden=true;
@@ -827,9 +877,10 @@ route();
     const {data,error}=await sb.from(T).select("progress,quizzes").eq("user_id",uid).maybeSingle();
     if(error){setSync("err","Couldn't load — reload the page");booted();return}
     const p=data?.progress||{},q=data?.quizzes||{};
-    allProg={current:p.current||null,courses:{...(p.courses||{})}};
+    allProg={current:p.current||null,enrolled:Array.isArray(p.enrolled)?p.enrolled.filter(id=>COURSES.some(c=>c.id===id)):[],courses:{...(p.courses||{})}};
     allQuiz={courses:{...(q.courses||{})}};
-    loadCourse(allProg.current||COURSES[0].id);
+    const startId=isEnrolled(allProg.current)?allProg.current:allProg.enrolled[0];
+    if(startId)loadCourse(startId);else{setCourse(COURSES[0].id);C=null;allProg.current=null;updatePicker()}
     canSave=true;setSync("ok","Synced");route();booted();
   }
   const qp=new URLSearchParams(location.search+"&"+location.hash.slice(1));
