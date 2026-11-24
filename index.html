@@ -100,6 +100,28 @@ tr.udetail td{background:rgba(0,0,0,.25)}
 .joinpick{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
 .joinpick input{background:rgba(0,0,0,.3);border:1px solid var(--line2);border-radius:10px;padding:8px 10px;flex:1;min-width:0}
 @media (max-width:600px){.pname,.coursepick span:nth-child(2){display:none}}
+/* lessons + revision */
+a.btn{text-decoration:none;color:var(--fg);display:inline-flex;align-items:center}
+a.btn.primary{color:var(--on-accent)}
+.lesson{max-width:760px;margin:0 auto;width:100%;display:grid;gap:16px}
+.lesson h1{font-size:30px;line-height:1.15}
+.lsec{display:grid;gap:8px}
+.lsec h2{font-size:12px;font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500}
+.lsec p,.lsec li{font-size:15.5px;line-height:1.7;color:var(--fg);margin:0}
+.lsec ul{margin:0;padding-left:20px;display:grid;gap:6px}
+.oneline{font-size:17px;line-height:1.6;padding:16px 18px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(123,140,255,.3)}
+pre.code{margin:0;padding:14px 16px;border-radius:12px;background:#0b0d13;border:1px solid var(--line2);overflow-x:auto;font-family:var(--f-mono);font-size:13px;line-height:1.6;color:#dfe4ff;white-space:pre}
+.out{font-family:var(--f-mono);font-size:12.5px;color:var(--muted);white-space:pre;overflow-x:auto;padding:10px 14px;border-left:2px solid var(--line2)}
+.trybox{padding:16px 18px;border-radius:12px;background:rgba(63,214,155,.07);border:1px solid rgba(63,214,155,.3)}
+.rem{padding:16px 18px;border-radius:12px;background:rgba(245,189,79,.07);border:1px solid rgba(245,189,79,.3)}
+.lnav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lbtn{white-space:nowrap}
+.sheet{display:grid;gap:12px}
+.sheet .item{padding:14px 16px}
+.sheet .item b{display:block;margin-bottom:6px}
+.sheet .item ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px;color:var(--fg)}
+.fcard{min-height:240px;display:grid;place-items:center;text-align:center;padding:28px;cursor:pointer;font-size:18px;line-height:1.6}
+.fcard .hint{font-size:12px;color:var(--dim);margin-top:12px}
 /* boot splash */
 .splash{position:fixed;inset:0;z-index:40;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);color:var(--muted);font-size:13px}
 body.booting .splash{display:flex}
@@ -244,6 +266,7 @@ td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 tbody tr{transition:background .15s}
 tbody tr:hover{background:rgba(255,255,255,.02)}
+td.topic a.tlink{color:inherit;text-decoration:none;border-bottom:1px dashed var(--line2)}td.topic a.tlink:hover{color:var(--accent);border-color:var(--accent)}
 tr.done td.topic{color:var(--dim);text-decoration:line-through;text-decoration-color:var(--dim)}
 tr.istoday{background:linear-gradient(90deg,rgba(245,189,79,.08),transparent 60%)}
 tr.istoday td:first-child{box-shadow:inset 2px 0 var(--warn)}
@@ -306,6 +329,7 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
       <a href="#dashboard" data-v="dashboard">Dashboard</a>
       <a href="#plan" data-v="plan">Plan</a>
       <a href="#quizzes" data-v="quizzes">Quizzes</a>
+      <a href="#revise" data-v="revise">Revise</a>
       <a href="#courses" data-v="courses">Courses</a>
       <a href="#admin" data-v="admin" id="adminLink" hidden>Admin</a>
     </nav>
@@ -390,6 +414,19 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
   </section>
 
   <!-- PLAN -->
+  <section class="view" id="v-learn" hidden><div id="lessonView" class="lesson"></div></section>
+
+  <section class="view" id="v-revise" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="pagehead"><div><div class="eyebrow" id="reviseEyebrow">Revision</div><h1>Revise</h1>
+        <p>One page per week with only what you must remember. Use it before quizzes and interviews.</p></div>
+        <div class="row" style="align-items:end"><label class="field" for="reviseWeek">Week<select id="reviseWeek" class="sel"></select></label></div></div>
+      <div class="notice" id="weakNote" hidden></div>
+      <div class="row" id="reviseModes"><button class="btn primary" type="button" id="modeSheet">Cheat sheet</button><button class="btn" type="button" id="modeCards">Flashcards</button></div>
+      <div id="reviseBody"></div>
+    </div>
+  </section>
+
   <section class="view" id="v-plan" hidden>
     <div style="display:grid;gap:16px">
       <div class="pagehead">
@@ -587,13 +624,13 @@ function renderDashboard(){
     const d=DAYS[ti],rec=state.days[d.key]||{};
     tp.append(el("div",{class:"eyebrow",text:`${greet()}Today · ${fmtD(todayD())} · Week ${d.w} · Day ${d.i+1} of ${NDAYS}`}),el("h1",{text:rec.done?"Today's session is done":"Today's session"}));
     const done=!!rec.done;
-    const btn=el("button",{class:done?"btn":"btn primary",type:"button",text:done?"Mark as not done":"Mark today as done"});
+    const btn=el("button",{class:"btn",type:"button",text:done?"Mark as not done":"Mark today as done"});
     btn.disabled=!canSave;
     btn.addEventListener("click",()=>toggleDay(d.key,!done));
     const task=el("div",{class:"task"},[
       el("div",{class:"row"},[chip(d.area),el("span",{class:"muted num",style:"font-size:12px",text:`${d.hrs} h planned`})]),
       el("div",{class:"t",text:d.topic}),
-      el("div",{class:"row"},[btn,el("a",{href:"#plan",class:"link",text:"Open in plan →"})])
+      el("div",{class:"row"},[el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn primary",text:isReviewDay(d)?"Start review":"Start today's lesson"}),btn,el("a",{href:"#plan",class:"link",text:"Open in plan →"})])
     ]);
     tp.append(task);
     const qw=d.w; const hasQuiz=s.best[qw]!=null;
@@ -705,7 +742,7 @@ function renderPlan(){
       ni.addEventListener("input",()=>setDay(d.key,{note:ni.value},1200));
       tb.append(el("tr",{class:(r.done?"done ":"")+(d.i===ti?"istoday":"")},[
         el("td",{},[cb]),el("td",{class:"num muted",style:"white-space:nowrap",text:`${wd(d.i)} ${fmtD(dayDate(d.i))}`}),
-        el("td",{class:"topic",text:d.topic}),el("td",{class:"num muted",text:`${d.hrs} h`}),el("td",{},[hi]),el("td",{},[ni])]));
+        el("td",{class:"topic"},[el("a",{href:`#learn/${C.id}/${d.key}`,class:"tlink",text:d.topic})]),el("td",{class:"num muted",text:`${d.hrs} h`}),el("td",{},[hi]),el("td",{},[ni])]));
     });
     det.append(el("div",{class:"days"},[el("table",{},[el("thead",{},[el("tr",{},["Done","Day","Topic","Plan","Hours","Notes"].map(h=>el("th",{text:h})))]),tb])]));
     list.append(det);
@@ -840,6 +877,88 @@ function renderCourses(){
   g.append(el("div",{class:"panel ccard add"},[el("h3",{text:"Add a course"}),
     el("p",{html:"Copy <code>courses/_template.js</code>, fill in the weeks, topics and quiz questions, and add one <code>&lt;script&gt;</code> line for it in <code>index.html</code>. It shows up here after you push."})]));
 }
+
+/* ---------- lessons ---------- */
+window.STUDY_LESSONS=window.STUDY_LESSONS||{};
+const lessonFiles={};
+function loadLessonWeek(cid,w){
+  const k=`${cid}/w${w}`;if(lessonFiles[k])return lessonFiles[k];
+  lessonFiles[k]=new Promise(res=>{const sc=document.createElement("script");sc.src=`lessons/${cid}/w${w}.js`;sc.onload=()=>res(true);sc.onerror=()=>res(false);document.head.append(sc)});
+  return lessonFiles[k];
+}
+const getLesson=(cid,key)=>window.STUDY_LESSONS[`${cid}:${key}`]||null;
+const isReviewDay=d=>/^Review\b|quiz$/i.test(d.topic)&&d.d===7;
+function lessonLink(d,label){const a=el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn lbtn",text:label||"Open lesson"});return a}
+async function renderLesson(cid,key){
+  const box=$("#lessonView");box.replaceChildren(el("div",{class:"muted",text:"Loading lesson…"}));
+  if(!C||C.id!==cid){if(isEnrolled(cid))loadCourse(cid);else{location.hash="#courses";return}}
+  const d=DAYS.find(x=>x.key===key);if(!d){location.hash="#plan";return}
+  await loadLessonWeek(cid,d.w);
+  if(location.hash!==`#learn/${cid}/${key}`)return;
+  const L=getLesson(cid,key),rec=state.days[key]||{};
+  const prev=DAYS[d.i-1],next=DAYS[d.i+1];
+  const head=[el("div",{class:"row"},[el("a",{href:"#plan",class:"link",text:"← Plan"}),el("span",{class:"muted",text:"·"}),el("span",{class:"eyebrow",text:`${C.title} · Week ${d.w} · Day ${d.d}`}),chip(d.area)]),
+    el("h1",{text:L&&L.title?L.title:d.topic})];
+  const body=[];
+  if(isReviewDay(d)){
+    body.push(el("div",{class:"oneline",text:"Review day. Read this week's cheat sheet, then take the quiz. Aim for 80% or more."}));
+    body.push(el("div",{class:"row"},[el("a",{href:`#revise`,class:"btn",text:"Open this week's cheat sheet",onclick:""}),el("a",{href:"#quizzes",class:"btn primary",text:`Take Week ${d.w} quiz`})]));
+    reviseWeekWanted=d.w;
+  }else if(!L){
+    body.push(el("div",{class:"notice",text:"The lesson for this day isn't written yet. It's coming soon. Meanwhile, ask Claude: \"Teach me: "+d.topic+"\" for a quick explanation."}));
+  }else{
+    body.push(el("div",{class:"oneline",html:L.one}));
+    if(L.learn&&L.learn.length)body.push(el("div",{class:"lsec"},[el("h2",{text:"Learn"}),...L.learn.map(p=>el("p",{html:p}))]));
+    if(L.ex)body.push(el("div",{class:"lsec"},[el("h2",{text:"Example"}),el("pre",{class:"code",text:L.ex}),L.out?el("div",{class:"out",text:L.out}):null]));
+    if(L.points&&L.points.length)body.push(el("div",{class:"lsec"},[el("h2",{text:"Key points"}),el("ul",{},L.points.map(x=>el("li",{html:x})))]));
+    if(L.try)body.push(el("div",{class:"lsec trybox"},[el("h2",{text:"Try it"}),el("p",{html:L.try})]));
+    if(L.remember&&L.remember.length)body.push(el("div",{class:"lsec rem"},[el("h2",{text:"Remember"}),el("ul",{},L.remember.map(x=>el("li",{html:x})))]));
+  }
+  const done=!!rec.done;
+  const mark=el("button",{class:done?"btn":"btn primary",type:"button",text:done?"✓ Done — mark not done":"Mark this day as done"});mark.disabled=!canSave;
+  mark.addEventListener("click",()=>{toggleDay(key,!done);setTimeout(()=>renderLesson(cid,key),80)});
+  const nav=el("div",{class:"lnav"},[prev?el("a",{href:`#learn/${cid}/${prev.key}`,class:"btn",text:"← Previous"}):el("span"),mark,next?el("a",{href:`#learn/${cid}/${next.key}`,class:"btn",text:"Next →"}):el("span")]);
+  box.replaceChildren(...head,...body,nav);
+  window.scrollTo({top:0});
+}
+
+/* ---------- revision ---------- */
+let reviseWeekWanted=null,reviseMode="sheet",cardIdx=0,cardFlip=false;
+async function renderRevise(){
+  $("#reviseEyebrow").textContent=`${C.title} · Revision`;
+  const sel=$("#reviseWeek");
+  if(sel.dataset.course!==C.id){sel.replaceChildren(...PLAN.map((w,i)=>el("option",{value:String(i+1),text:`Week ${i+1} · ${w[1]}`})));sel.dataset.course=C.id;
+    const ti=todayIndex();sel.value=String(Math.max(1,Math.min(NWEEKS,ti<0?1:Math.floor(ti/7)+1)))}
+  if(reviseWeekWanted){sel.value=String(reviseWeekWanted);reviseWeekWanted=null}
+  const s=stats();const weak=Object.entries(s.best).filter(([w,p])=>p<80).map(([w])=>+w);
+  const wn=$("#weakNote");wn.hidden=!weak.length;
+  if(weak.length){wn.replaceChildren(document.createTextNode("Weak weeks (quiz below 80%): "),...weak.flatMap((w,i)=>{const a=el("a",{href:"#revise",text:`Week ${w}`});a.addEventListener("click",e=>{e.preventDefault();sel.value=String(w);renderRevise()});return i?[document.createTextNode(", "),a]:[a]}),document.createTextNode(". Revise these first."))}
+  const w=+sel.value;await loadLessonWeek(C.id,w);
+  const days=DAYS.filter(d=>d.w===w&&!isReviewDay(d));
+  const items=days.map(d=>({d,L:getLesson(C.id,d.key)}));
+  $("#modeSheet").className=reviseMode==="sheet"?"btn primary":"btn";$("#modeCards").className=reviseMode==="cards"?"btn primary":"btn";
+  const body=$("#reviseBody");body.replaceChildren();
+  if(reviseMode==="sheet"){
+    const sh=el("div",{class:"sheet"});
+    items.forEach(({d,L})=>sh.append(el("div",{class:"panel item"},[el("b",{text:L&&L.title?L.title:d.topic}),
+      L?el("ul",{},[el("li",{html:L.one}),...(L.remember||[]).map(x=>el("li",{html:x}))]):el("div",{class:"muted",style:"font-size:13px",text:"Lesson coming soon."}),
+      el("a",{href:`#learn/${C.id}/${d.key}`,class:"link",style:"font-size:12px;margin-top:8px;display:inline-block",text:"Open full lesson →"})])));
+    sh.append(el("div",{class:"row"},[el("a",{href:"#quizzes",class:"btn primary",text:`Take Week ${w} quiz`})]));
+    body.append(sh);
+  }else{
+    const cards=items.filter(x=>x.L).flatMap(({d,L})=>[{q:L.title||d.topic,a:[L.one,...(L.remember||[])]}]);
+    if(!cards.length){body.append(el("div",{class:"empty",text:"No flashcards yet for this week."}));return}
+    cardIdx=Math.min(cardIdx,cards.length-1);const c=cards[cardIdx];
+    const card=el("div",{class:"panel fcard",tabindex:"0"},[cardFlip?el("div",{},[...c.a.map(x=>el("div",{html:x,style:"margin:4px 0;font-size:15px"}))]):el("div",{},[el("b",{text:c.q}),el("div",{class:"hint",text:"Say the answer out loud, then tap to check"})])]);
+    const flip=()=>{cardFlip=!cardFlip;renderRevise()};card.addEventListener("click",flip);card.addEventListener("keydown",e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();flip()}});
+    const prev=el("button",{class:"btn",type:"button",text:"← Previous"});prev.disabled=cardIdx===0;prev.addEventListener("click",()=>{cardIdx--;cardFlip=false;renderRevise()});
+    const next=el("button",{class:"btn primary",type:"button",text:"Next →"});next.disabled=cardIdx>=cards.length-1;next.addEventListener("click",()=>{cardIdx++;cardFlip=false;renderRevise()});
+    body.append(card,el("div",{class:"lnav",style:"margin-top:12px"},[prev,el("span",{class:"muted num",text:`${cardIdx+1} / ${cards.length}`}),next]));
+  }
+}
+$("#reviseWeek").addEventListener("change",()=>{cardIdx=0;cardFlip=false;renderRevise()});
+$("#modeSheet").addEventListener("click",()=>{reviseMode="sheet";renderRevise()});
+$("#modeCards").addEventListener("click",()=>{reviseMode="cards";cardIdx=0;cardFlip=false;renderRevise()});
 
 /* ---------- activity log ---------- */
 let sbClient=null;
@@ -982,13 +1101,15 @@ $("#userSearch").addEventListener("input",()=>{if(adminData){const S=new Map(adm
 /* ---------- routing ---------- */
 let current="dashboard";
 function route(){
-  const h=(location.hash||"#dashboard").slice(1);current=["dashboard","plan","quizzes","courses","admin"].includes(h)?h:"dashboard";
+  const h=(location.hash||"#dashboard").slice(1);let lessonArgs=null;
+  if(h.startsWith("learn/")){const [,cid,key]=h.split("/");lessonArgs=[cid,key];current="learn"}
+  else current=["dashboard","plan","quizzes","courses","admin","revise"].includes(h)?h:"dashboard";
   if(current==="admin"&&!isAdmin)current="dashboard";
   if(current!=="courses"&&current!=="admin"&&!(C&&isEnrolled(C.id))&&uid){current="courses";if(location.hash!=="#courses")history.replaceState(null,"","#courses")}
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==`v-${current}`);
-  document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===current)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===(current==="learn"?"plan":current))a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   moveInd();kpiN=0;
-  if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
+  if(current==="learn"&&lessonArgs)renderLesson(...lessonArgs);else if(current==="revise")renderRevise();else if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
 }
 window.addEventListener("hashchange",route);
 
