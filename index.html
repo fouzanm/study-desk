@@ -96,6 +96,8 @@ main .wrap{padding-block:28px 72px;display:grid;gap:16px}
 tr.urow{cursor:pointer}
 tr.udetail td{background:rgba(0,0,0,.25)}
 .mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pgrid{grid-template-columns:repeat(2,1fr)}
+@media (max-width:700px){.pgrid{grid-template-columns:1fr}}
 .cchips{display:flex;flex-wrap:wrap;gap:6px}
 .cchips .chip{font-size:11px;padding:2px 8px 2px 6px}
 .glabel{grid-column:1/-1;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
@@ -326,12 +328,13 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 <header class="top">
   <div class="wrap">
     <div class="brand"><div class="logo">SD</div>Study Desk</div>
-    <a class="coursepick" href="#courses" id="coursePick" title="Change course"><span class="cdot" id="courseDot"></span><span id="courseName">Course</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
+    <a class="coursepick" href="#paths" id="coursePick" title="Change course"><span class="cdot" id="courseDot"></span><span id="courseName">Course</span><svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M2.5 4 5 6.5 7.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></a>
     <nav aria-label="Sections"><span class="ind" aria-hidden="true"></span>
       <a href="#dashboard" data-v="dashboard">Dashboard</a>
       <a href="#plan" data-v="plan">Plan</a>
       <a href="#quizzes" data-v="quizzes">Quizzes</a>
       <a href="#revise" data-v="revise">Revise</a>
+      <a href="#paths" data-v="paths">Paths</a>
       <a href="#courses" data-v="courses">Courses</a>
       <a href="#admin" data-v="admin" id="adminLink" hidden>Admin</a>
     </nav>
@@ -341,7 +344,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
         <button class="avbtn" type="button" id="profileBtn" aria-haspopup="true" aria-expanded="false"><span class="av" id="avatarI">?</span><span class="pname" id="whoName"></span></button>
         <div class="menu" id="profileMenu" hidden>
           <div class="mhead"><span class="av lg" id="avatarI2">?</span><div style="min-width:0"><b id="whoName2"></b><div class="muted whoemail" id="whoEmail"></div></div></div>
-          <a href="#courses" class="mitem">Paths &amp; courses</a>
+          <a href="#paths" class="mitem">My paths</a>
+          <a href="#courses" class="mitem">My courses</a>
           <button type="button" class="mitem" id="signOut">Sign out</button>
         </div>
       </div>
@@ -465,9 +469,17 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
     </div>
   </section>
 
+  <section class="view" id="v-paths" hidden>
+    <div style="display:grid;gap:16px">
+      <div class="pagehead"><div><div class="eyebrow">Job paths</div><h1>Paths</h1>
+        <p id="pathsIntro">A path is a set of courses in the right order for a job role. Start one and the app plans every course for you.</p></div></div>
+      <div class="qgrid pgrid" id="pathGrid"></div>
+    </div>
+  </section>
+
   <section class="view" id="v-courses" hidden>
     <div style="display:grid;gap:16px">
-      <div class="pagehead"><div><div class="eyebrow">Your library</div><h1>Courses</h1>
+      <div class="pagehead"><div><div class="eyebrow">Single topics</div><h1>Courses</h1>
         <p id="coursesIntro">Pick the course you're studying. Each course keeps its own plan, progress and quiz scores.</p></div></div>
       <div class="qgrid" id="courseGrid"></div>
     </div>
@@ -562,11 +574,11 @@ function leaveCourse(id){
   allProg.enrolled=allProg.enrolled.filter(x=>x!==id); // lesson progress is kept
   const next=allProg.enrolled[0];
   if(next)loadCourse(next);else{allProg.current=null;C=null;updatePicker()}
-  progWriter.schedule(50);route();
+  progWriter.schedule(50);location.hash="#"+lastListView;route();
 }
 function updatePicker(){
   const has=C&&isEnrolled(C.id);
-  $("#courseName").textContent=has?C.title:"Choose a path or course";
+  $("#courseName").textContent=has?C.title:"Choose a path";
   const col=has?courseColor(C):"var(--dim)";$("#courseDot").style.background=col;$("#courseDot").style.boxShadow=has?`0 0 8px ${col}`:"none";
 }
 let db=null, uid=null, progRef=null, quizRef=null, canSave=false;
@@ -851,11 +863,8 @@ function courseStats(c){
   const days=(C&&state.days)||allProg.lessons||{};
   const done=keys.filter(k=>days[k]&&days[k].done).length,n=keys.length;
   return {n,done,pct:n?Math.round(100*done/n):0,start:(allProg.plans[c.id]||{}).startDate}}
-function renderCourses(){
-  const g=$("#courseGrid");g.replaceChildren();
-  const mine=PLANS.filter(c=>isEnrolled(c.id));
-  $("#coursesIntro").textContent=mine.length?"Your paths and courses are first. Progress is shared: a lesson done once counts everywhere.":"Pick a path (a ready-made set of courses for a role) or a single course, then choose when to start.";
-  const card=c=>{
+let lastListView="paths";
+function planCard(c){
     const joined=isEnrolled(c.id),st=courseStats(c),col=courseColor(c),cur=joined&&C&&C.id===c.id;
     const badge=el("span",{class:"cbadge",text:c.title.split(/\s+/).filter(w=>/^[A-Za-z]/.test(w)).map(w=>w[0]).join("").slice(0,2).toUpperCase()});
     const tag=cur?el("span",{class:"pill info",text:"Current"}):joined?el("span",{class:"pill good",text:"Joined"}):el("span",{class:"pill",style:"color:var(--muted);border-color:var(--line2)",text:c.kind==="path"?"Path":"Course"});
@@ -885,11 +894,24 @@ function renderCourses(){
     }
     kids.push(foot);
     return el("div",{class:"panel spot ccard"+(cur?" cur":""),style:`--cc:${col}`},kids);
-  };
-  if(mine.length){g.append(el("div",{class:"glabel",text:"Mine"}));mine.forEach(c=>g.append(card(c)))}
-  const paths=PATHS.filter(c=>!isEnrolled(c.id)),singles=PLANS.filter(c=>c.kind==="course"&&!isEnrolled(c.id));
-  if(paths.length){g.append(el("div",{class:"glabel",text:"Paths · a set of courses for a role"}));paths.forEach(c=>g.append(card(c)))}
-  if(singles.length){g.append(el("div",{class:"glabel",text:"Courses · study one topic"}));singles.forEach(c=>g.append(card(c)))}
+  }
+
+function renderPaths(){
+  lastListView="paths";
+  const g=$("#pathGrid");g.replaceChildren();
+  const mine=PATHS.filter(c=>isEnrolled(c.id)),other=PATHS.filter(c=>!isEnrolled(c.id));
+  $("#pathsIntro").textContent=mine.length?"Your paths are first. Progress is shared with courses: a lesson done once counts everywhere.":"A path is a set of courses in the right order for a job role. Start one and the app plans every course for you.";
+  if(mine.length){g.append(el("div",{class:"glabel",text:"My paths"}));mine.forEach(c=>g.append(planCard(c)))}
+  if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"More paths":"Choose a path"}));other.forEach(c=>g.append(planCard(c)))}
+}
+function renderCourses(){
+  lastListView="courses";
+  const g=$("#courseGrid");g.replaceChildren();
+  const singles=PLANS.filter(c=>c.kind==="course");
+  const mine=singles.filter(c=>isEnrolled(c.id)),other=singles.filter(c=>!isEnrolled(c.id));
+  $("#coursesIntro").textContent=mine.length?"Courses you joined on their own are first. Lessons you finish here also count in your paths.":"Study one topic on its own. Lessons you finish here also count in any path that includes the course.";
+  if(mine.length){g.append(el("div",{class:"glabel",text:"My courses"}));mine.forEach(c=>g.append(planCard(c)))}
+  if(other.length){g.append(el("div",{class:"glabel",text:mine.length?"More courses":"All courses"}));other.forEach(c=>g.append(planCard(c)))}
 }
 
 /* ---------- lessons ---------- */
@@ -1117,13 +1139,13 @@ let current="dashboard";
 function route(){
   const h=(location.hash||"#dashboard").slice(1);let lessonArgs=null;
   if(h.startsWith("learn/")){const [,cid,key]=h.split("/");lessonArgs=[cid,key];current="learn"}
-  else current=["dashboard","plan","quizzes","courses","admin","revise"].includes(h)?h:"dashboard";
+  else current=["dashboard","plan","quizzes","paths","courses","admin","revise"].includes(h)?h:"dashboard";
   if(current==="admin"&&!isAdmin)current="dashboard";
-  if(current!=="courses"&&current!=="admin"&&!(C&&isEnrolled(C.id))&&uid){current="courses";if(location.hash!=="#courses")history.replaceState(null,"","#courses")}
+  if(current!=="courses"&&current!=="paths"&&current!=="admin"&&!(C&&isEnrolled(C.id))&&uid){current="paths";if(location.hash!=="#paths")history.replaceState(null,"","#paths")}
   document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==`v-${current}`);
   document.querySelectorAll("nav a").forEach(a=>{if(a.dataset.v===(current==="learn"?"plan":current))a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   moveInd();kpiN=0;
-  if(current==="learn"&&lessonArgs)renderLesson(...lessonArgs);else if(current==="revise")renderRevise();else if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
+  if(current==="learn"&&lessonArgs)renderLesson(...lessonArgs);else if(current==="revise")renderRevise();else if(current==="dashboard")renderDashboard();else if(current==="plan")renderPlan();else if(current==="paths")renderPaths();else if(current==="courses")renderCourses();else if(current==="admin")renderAdmin();else renderQuizHome();
 }
 window.addEventListener("hashchange",route);
 
