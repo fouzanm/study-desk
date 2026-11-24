@@ -83,7 +83,11 @@ button.coursepick{cursor:pointer;font:inherit;font-size:13px}
 .mitem{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:8px;border:0;background:none;color:var(--fg);text-decoration:none;cursor:pointer;font-size:13px}
 .mitem:hover{background:rgba(255,255,255,.05)}
 .ccard{display:flex;flex-direction:column;gap:12px}
-.ccard>.row:last-child,.ccard>.joinpick{margin-top:auto}
+.ccard>.row:last-child{margin-top:auto}
+.ccard>.joinpick{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:16px 20px 20px;background:var(--panel2);border-top:1px solid var(--line2);border-radius:0 0 var(--r) var(--r);box-shadow:0 -16px 30px -12px rgba(0,0,0,.6);animation:jp .18s var(--ease)}
+@keyframes jp{from{opacity:0;transform:translateY(6px)}}
+.joinpick .jhead{display:flex;justify-content:space-between;align-items:center}
+.joinpick .x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:12.5px;padding:4px 6px;border-radius:6px}.joinpick .x:hover{color:var(--fg);background:rgba(255,255,255,.05)}
 .ccard.cur{border-color:color-mix(in srgb,var(--cc) 55%,transparent)}
 .ccard .cbadge{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;color:var(--on-accent);background:var(--cc)}
 .ccard h3{font-size:17px}
@@ -331,6 +335,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
 
 @media (max-width:1000px){.kpis{grid-template-columns:repeat(3,1fr)}.qgrid{grid-template-columns:1fr 1fr}.b-today,.b-ring,.b-half,.b-third,.b-twothird{grid-column:1/-1}}
 @media (max-width:600px){.kpis{grid-template-columns:1fr 1fr}.qgrid{grid-template-columns:1fr}.weeks{gap:3px}.who .sync span{display:none}details.week summary{grid-template-columns:1fr auto;gap:10px}.wnum,.caret{display:none}.wmeta .track{width:60px}.today h1{font-size:24px}.pagehead h1{font-size:26px}}
+nav a{padding:6px 11px}.top .wrap{gap:14px}.coursepick{max-width:190px}.who .sync span{display:none}.who .sync{padding:8px}
+@media (max-width:1240px){nav{order:3;flex-basis:100%;justify-content:center}}
 @media (max-width:760px){nav{max-width:100%;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav a{flex:none;white-space:nowrap;padding:6px 11px}}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
 </style>
@@ -478,8 +484,8 @@ code{font-family:var(--f-mono);font-size:12.5px;background:rgba(255,255,255,.06)
         <div class="panel spot b-half"><div class="phead"><h2>Sign-ups</h2><span class="sub">New accounts per day</span></div><div class="chartbox"><canvas id="cAdminSignups"></canvas></div></div>
         <div class="panel spot b-half"><div class="phead"><h2>Quiz scores by course</h2><span class="sub" id="quizCourseSub">Average across all attempts</span></div><div class="chartbox"><canvas id="cAdminQuiz"></canvas></div></div>
         <div class="panel spot b-full"><div class="phead"><h2>Courses</h2><span class="sub">Enrolment and progress</span></div><div style="overflow-x:auto" id="adminCourses"></div></div>
-        <div class="panel spot b-twothird"><div class="phead"><h2>Users</h2><input type="search" id="userSearch" class="sel" placeholder="Search name or email" aria-label="Search users" style="max-width:240px"></div><div style="overflow-x:auto" id="adminUsers"></div></div>
-        <div class="panel spot b-third"><div class="phead"><h2>Recent activity</h2><span class="sub">Latest 40 events</span></div><div class="feed" id="adminFeed"></div></div>
+        <div class="panel spot b-twothird" style="align-self:start"><div class="phead"><h2>Users</h2><input type="search" id="userSearch" class="sel" placeholder="Search name or email" aria-label="Search users" style="max-width:240px"></div><div style="overflow-x:auto" id="adminUsers"></div></div>
+        <div class="panel spot b-third" style="align-self:start"><div class="phead"><h2>Recent activity</h2><span class="sub">Latest 40 events</span></div><div class="feed" id="adminFeed"></div></div>
       </div>
     </div>
   </section>
@@ -616,7 +622,7 @@ function renderPickMenu(){
 function closePick(){$("#pickMenu").hidden=true;$("#coursePick").setAttribute("aria-expanded","false")}
 $("#coursePick").addEventListener("click",e=>{e.stopPropagation();const m=$("#pickMenu");if(m.hidden){renderPickMenu();m.style.left="";m.hidden=false;const r=m.getBoundingClientRect(),over=r.right-(innerWidth-12);if(over>0)m.style.left=-over+"px";$("#coursePick").setAttribute("aria-expanded","true")}else closePick()});
 document.addEventListener("click",e=>{if(!$("#pickMenu").hidden&&!e.target.closest("#pickWrap"))closePick()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closePick()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closePick();document.querySelectorAll(".joinpick").forEach(x=>x.remove())}});
 function updatePicker(){
   const has=C&&isEnrolled(C.id);
   $("#courseName").textContent=has?C.title:"Choose a path";
@@ -624,7 +630,7 @@ function updatePicker(){
 }
 let db=null, uid=null, progRef=null, quizRef=null, canSave=false;
 
-function setSync(s,t){$("#sync").dataset.s=s;$("#syncText").textContent=t}
+function setSync(s,t){$("#sync").dataset.s=s;$("#sync").title=t;$("#syncText").textContent=t}
 
 /* one write at a time per document, coalesced */
 function makeWriter(getRef,getBody){
@@ -924,12 +930,15 @@ function planCard(c){
       const join=el("button",{class:"btn primary",type:"button",text:c.kind==="path"?"Start this path":c.kind==="project"?"Start project":"Join course"});join.disabled=!canSave;
       join.addEventListener("click",()=>{
         const nm=nextMonday(),today=isoD(todayD());
-        const pick=el("div",{class:"joinpick"},[el("div",{class:"eyebrow",text:"When do you want to start?"})]);
+        document.querySelectorAll(".joinpick").forEach(x=>x.remove());
+        const card=foot.parentElement,x=el("button",{class:"x",type:"button",text:"Cancel"});
+        const pick=el("div",{class:"joinpick",role:"group","aria-label":"Choose a start date"},[el("div",{class:"jhead"},[el("div",{class:"eyebrow",text:"When do you want to start?"}),x])]);
+        x.addEventListener("click",()=>{pick.remove();join.focus()});
         const opt=(label,date)=>{const b=el("button",{class:"btn",type:"button",text:label});b.addEventListener("click",()=>joinCourse(c.id,date));return b};
         const row=el("div",{class:"row"},[opt("Today",today)]);if(nm!==today)row.append(opt(`Mon ${fmtD(parseD(nm))}`,nm));
         const di=el("input",{type:"date",id:`join-${c.id}`,"aria-label":"Pick a start date"});di.value=nm;
         const go=el("button",{class:"btn primary",type:"button",text:"Start on this date"});go.addEventListener("click",()=>{if(di.value)joinCourse(c.id,di.value)});
-        pick.append(row,el("div",{class:"row"},[di,go]));foot.replaceWith(pick);
+        pick.append(row,el("div",{class:"row"},[di,go]));card.append(pick);pick.querySelector("button.btn").focus();
       });
       foot.append(join);
     }
