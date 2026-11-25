@@ -1220,9 +1220,28 @@ route();
 (async()=>{
   const note=$("#authNote");
   const cfg=window.STUDY_CONFIG||{};
-  if(typeof supabase==="undefined"||!cfg.SUPABASE_URL||cfg.SUPABASE_URL.includes("YOUR_")){
-    setSync("err","Not configured");note.hidden=false;
-    note.textContent="Saving isn't set up yet. Add your Supabase URL and anon key to config.js (see README).";booted();return}
+  function applyState(p,q){
+    if(p.v===2){
+      allProg={current:p.current||null,enrolled:(p.enrolled||[]).filter(id=>PLANS.some(c=>c.id===id)),plans:{...(p.plans||{})},lessons:{...(p.lessons||{})}};
+    }else{ // older format: keep joined paths that still exist, start lesson progress fresh
+      allProg={current:null,enrolled:(p.enrolled||[]).filter(id=>PATHS.some(c=>c.id===id)),plans:{},lessons:{}};
+      allProg.enrolled.forEach(id=>{allProg.plans[id]={startDate:(p.courses&&p.courses[id]&&p.courses[id].startDate)||nextMonday()}});
+    }
+    allQuiz={attempts:q.v===2?[...(q.attempts||[])]:[]};
+    const startId=isEnrolled(allProg.current)?allProg.current:allProg.enrolled[0];
+    if(startId)loadCourse(startId);else{setCourse(PLANS[0].id);C=null;allProg.current=null;updatePicker()}
+  }
+  const onLocalhost=["localhost","127.0.0.1","[::1]",""].includes(location.hostname);
+  if(!cfg.SUPABASE_URL||cfg.SUPABASE_URL.includes("YOUR_")||(onLocalhost&&!cfg.USE_SUPABASE_ON_LOCALHOST)){
+    // Local mode: no Supabase project set, so progress is saved in this browser only.
+    const K="studydesk.local",read=()=>{try{return JSON.parse(localStorage.getItem(K)||"{}")}catch(e){return {}}};
+    const write=part=>body=>{const all=read();all[part]=body;try{localStorage.setItem(K,JSON.stringify(all))}catch(e){throw {code:"unavailable",message:"Browser storage is blocked"}}};
+    progRef={set:async b=>write("progress")(b)};quizRef={set:async b=>write("quizzes")(b)};
+    uid="local";const st=read();applyState(st.progress||{},st.quizzes||{});
+    canSave=true;setSync("ok","Saved on this device (local mode)");
+    note.hidden=false;note.textContent="Local mode: no sign-in, progress is saved in this browser only. See the README to connect your own Supabase.";
+    route();booted();return}
+  if(typeof supabase==="undefined"){setSync("err","Offline");note.hidden=false;note.textContent="Couldn't load the sign-in library. Check your connection and reload.";booted();return}
   const sb=supabase.createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY);sbClient=sb;
   const T="study_state";
   const asErr=e=>({code:"unavailable",message:e.message});
@@ -1282,16 +1301,7 @@ route();
     setSync("idle","Loading your data…");
     const {data,error}=await sb.from(T).select("progress,quizzes").eq("user_id",uid).maybeSingle();
     if(error){setSync("err","Couldn't load — reload the page");booted();return}
-    const p=data?.progress||{},q=data?.quizzes||{};
-    if(p.v===2){
-      allProg={current:p.current||null,enrolled:(p.enrolled||[]).filter(id=>PLANS.some(c=>c.id===id)),plans:{...(p.plans||{})},lessons:{...(p.lessons||{})}};
-    }else{ // older format: keep joined paths that still exist, start lesson progress fresh
-      allProg={current:null,enrolled:(p.enrolled||[]).filter(id=>PATHS.some(c=>c.id===id)),plans:{},lessons:{}};
-      allProg.enrolled.forEach(id=>{allProg.plans[id]={startDate:(p.courses&&p.courses[id]&&p.courses[id].startDate)||nextMonday()}});
-    }
-    allQuiz={attempts:q.v===2?[...(q.attempts||[])]:[]};
-    const startId=isEnrolled(allProg.current)?allProg.current:allProg.enrolled[0];
-    if(startId)loadCourse(startId);else{setCourse(PLANS[0].id);C=null;allProg.current=null;updatePicker()}
+    applyState(data?.progress||{},data?.quizzes||{});
     canSave=true;setSync("ok","Synced");
     try{const r=await sb.rpc("is_admin");isAdmin=r.data===true}catch(e){isAdmin=false}
     $("#adminLink").hidden=!isAdmin;

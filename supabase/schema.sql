@@ -41,7 +41,50 @@ alter table public.activity enable row level security;
 create policy "insert own activity" on public.activity for insert to authenticated
   with check ((select auth.uid()) = user_id);
 
--- is_admin() and admin_overview(days) are security-definer functions that
--- check admin membership first. See the migration in the Supabase dashboard.
+-- Admin functions. They run with owner rights but check admin membership
+-- first, so normal users get "not authorized".
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = ''
+as $$
+  select exists (select 1 from public.admins where user_id = (select auth.uid()));
+$$;
+
+create or replace function public.admin_overview(days integer default 60)
+returns jsonb language plpgsql stable security definer set search_path = ''
+as $$
+begin
+  if not public.is_admin() then
+    raise exception 'not authorized' using errcode = '42501';
+  end if;
+  return jsonb_build_object(
+    'generated_at', now(),
+    'users', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', u.id, 'email', u.email,
+        'name', coalesce(u.raw_user_meta_data->>'full_name', u.raw_user_meta_data->>'name'),
+        'provider', u.raw_app_meta_data->>'provider',
+        'created_at', u.created_at, 'last_sign_in_at', u.last_sign_in_at,
+        'progress', s.progress, 'quizzes', s.quizzes, 'updated_at', s.updated_at,
+        'last_activity', (select max(a.at) from public.activity a where a.user_id = u.id)
+      ) order by u.created_at desc), '[]'::jsonb)
+      from auth.users u left join public.study_state s on s.user_id = u.id
+    ),
+    'activity', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'user_id', a.user_id, 'type', a.type, 'course_id', a.course_id, 'meta', a.meta, 'at', a.at
+      ) order by a.at desc), '[]'::jsonb)
+      from (select * from public.activity
+            where at > now() - make_interval(days => greatest(1, least(days, 365)))
+            order by at desc limit 5000) a
+    )
+  );
+end;
+$$;
+
+revoke execute on function public.is_admin() from public, anon;
+revoke execute on function public.admin_overview(integer) from public, anon;
+grant execute on function public.is_admin() to authenticated;
+grant execute on function public.admin_overview(integer) to authenticated;
+
 -- To make someone an admin:
 --   insert into public.admins (user_id) select id from auth.users where email = 'you@example.com';

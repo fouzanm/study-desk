@@ -1,89 +1,157 @@
 # Study Desk
 
-A personal study platform: courses with a day-by-day plan, progress tracking, charts and weekly quizzes. It ships with one course, **FDE Prep** (12 weeks toward Forward Deployed, Implementation and Integration Engineer roles), and you can add more.
+A free study platform for people preparing for tech roles. Pick a **path** (a bundle of courses for one job), single **courses**, or hands-on **projects**, then learn one short lesson a day, tick it off, take quizzes and revise.
 
-- **Dashboard:** today's task, overall progress, hours per week, progress over time, quiz scores, progress by topic, weekly completion and a study calendar.
-- **Plan:** 84 days with a done checkbox, the hours you studied and notes.
-- **Quizzes:** 12 weekly quizzes (5 multiple-choice questions each) with explanations.
-- **Courses:** switch between courses; each keeps its own plan, progress and quiz scores.
-- **Your account:** sign up with your name, email and password. Your name and initials show in the top bar.
-- **Login and sync:** email and password login with Supabase. Your data follows you to every device.
+Live: <https://studydesk-fouzan.netlify.app>
 
-It's a static site (`index.html`, `config.js` catalogue and lesson files), so it needs no build step.
+## Features
 
-## Setup (about 10 minutes)
+- **Paths:** Forward Deployed Engineer, AI Engineer, Software Engineer and Data Engineer. Each is a set of courses in a sensible order, with a start date you choose.
+- **Courses:** 25 single topics (SQL, Python, APIs, RAG, Agents, System Design, Airflow, Spark…). Join any of them on their own.
+- **Projects:** portfolio projects you can join separately (Odoo AI Agent, Integration Hub, Data Pipeline).
+- **Lessons:** short and simple: the idea in one line, what to learn, an example, a task to try and what to remember.
+- **Plan:** every lesson with a done checkbox, hours studied and notes.
+- **Quizzes:** one multiple-choice quiz per course, with explanations.
+- **Revise:** a one-page cheat sheet and flashcards for each course, plus a list of your weak courses.
+- **Dashboard:** today's lesson, overall progress, charts, streak and a study calendar.
+- **Accounts:** email or Google sign-in. Progress syncs across devices, and a lesson done in one path counts in every path that has it.
+- **Admin panel:** sign-ups, a funnel, daily activity and per-user progress. Only admins can see it.
 
-### 1. Create the database (Supabase, free)
+It is a static site: plain HTML, CSS and JavaScript with no build step. Supabase handles sign-in and storage.
 
-1. Go to <https://supabase.com>, sign up and click **New project**. Any name and region work; pick the region closest to you, for example Mumbai.
-2. Open **SQL Editor**, paste the contents of `supabase/schema.sql`, and click **Run**.
-3. Open **Project Settings → API** and copy:
-   - the **Project URL**;
-   - the **anon public** key.
-4. Paste both into `config.js` and commit the change.
+## Run it locally (1 minute, no account needed)
 
-The anon key is designed to be public. The row-level security rules in `schema.sql` make sure each user can only read and change their own data.
+```bash
+git clone https://github.com/fouzanm/study-desk.git
+cd study-desk
+python3 -m http.server 8000
+```
 
-**Optional:** in **Authentication → Providers → Email** you can turn off **Confirm email**, so you can sign in straight after creating your account without clicking a confirmation link.
+Open <http://localhost:8000>.
 
-### 2. Host it (Netlify or Vercel, free)
+On `localhost` the app runs in **local mode**: there's no sign-in, and your progress is saved in your browser only. Everything else works. Local mode never touches the live database.
 
-**Netlify**
-1. Sign in at <https://app.netlify.com> with GitHub.
-2. Click **Add new site → Import an existing project → GitHub**, and choose `study-desk`. Give Netlify access to private repos when asked.
-3. Leave the build command empty. Set the publish directory to `.` (already set in `netlify.toml`), then click **Deploy**.
+Any static server works instead of Python, for example `npx serve`.
 
-**Vercel**
-1. Sign in at <https://vercel.com> with GitHub.
-2. Click **Add New → Project**, import `study-desk`, keep the framework as **Other**, and click **Deploy**.
+## Run your own copy with sign-in
 
-Every push to `main` redeploys the site automatically.
+To give your copy accounts and syncing, connect your own free Supabase project.
 
-### 3. Allow your site address in Supabase
+### 1. Create the database
 
-In Supabase, open **Authentication → URL Configuration**, set **Site URL** to your Netlify or Vercel address, and save. This makes confirmation emails link back to your site.
+1. Sign up at <https://supabase.com> and click **New project**. Any name works; pick the region closest to your users.
+2. Open **SQL Editor**, paste all of `supabase/schema.sql` and click **Run**. This creates:
+   - the tables;
+   - the security rules (each user can only see their own data);
+   - the admin functions.
+3. Open **Project Settings → API** and copy the **Project URL** and the **anon public** key.
 
-### 4. Create your account
+### 2. Put your keys in `config.js`
 
-Open the site, choose **Create account**, and sign in.
+```js
+window.STUDY_CONFIG = {
+  SUPABASE_URL: "https://YOUR-PROJECT.supabase.co",
+  SUPABASE_ANON_KEY: "your anon public key",
+  USE_SUPABASE_ON_LOCALHOST: false
+};
+```
 
-## How courses work
+| Setting | What it does |
+|---|---|
+| `SUPABASE_URL` | Your Supabase project address. Leave it `""` to always use local mode. |
+| `SUPABASE_ANON_KEY` | Your project's **anon public** key. It is safe to publish: the security rules protect the data. **Never** put the `service_role` key here. |
+| `USE_SUPABASE_ON_LOCALHOST` | `false` (default): local mode on localhost. `true`: use sign-in on localhost too, for testing. Add `http://localhost:8000` to Supabase's **Redirect URLs** if you do. |
 
-- **Courses** are single topics (SQL, RAG, Airflow…). They live in `catalog/topics.js`, each with an ordered list of lessons and a quiz.
-- **Paths** are bundles of courses for a role (FDE, AI Engineer, Software Engineer, Data Engineer). They live in `catalog/paths.js`.
-- **Projects** are hands-on portfolio builds. They are courses with `"kind":"project"` in `catalog/topics.js`, listed under the Projects menu and never inside a path.
-- **Lessons** load on demand from `lessons/<course-id>.js`. A lesson that isn't written yet shows "coming soon".
-- Progress is stored per lesson, so a lesson done in one path counts in every path that includes it.
+### 3. Set up sign-in in Supabase
 
-## Add a course
+- **Email:** works out of the box. In **Authentication → Providers → Email** you can turn off **Confirm email** so new users can sign in without a confirmation link.
+- **Google (optional):**
+  1. In Google Cloud Console, create an **OAuth client ID** (type: Web application).
+  2. Add `https://YOUR-PROJECT.supabase.co/auth/v1/callback` as an authorised redirect URI.
+  3. Paste the client ID and secret into Supabase under **Authentication → Providers → Google** and switch it on.
 
-1. In `catalog/topics.js`, add an entry:
+  The secret stays in Supabase, never in this repo.
+- **URL Configuration:** under **Authentication → URL Configuration**, set **Site URL** to your live address. Add it to **Redirect URLs** as well.
+
+### 4. Host it (free)
+
+- **Netlify:**
+  1. Go to **Add new site → Import an existing project → GitHub** and pick your fork.
+  2. Leave the build command empty.
+  3. Set the publish directory to `.` (already set in `netlify.toml`).
+- **Vercel:** go to **Add New → Project**, import your fork, set the framework to **Other** and deploy.
+
+Every push to `main` redeploys automatically.
+
+### 5. Make yourself an admin
+
+Create your account on the site, then run this in the Supabase SQL Editor with your email:
+
+```sql
+insert into public.admins (user_id)
+select id from auth.users where email = 'you@example.com';
+```
+
+Reload the site and an **Admin** tab appears. Nobody can add themselves as an admin from the app.
+
+## How the content is organised
+
+| Thing | Where | Notes |
+|---|---|---|
+| Courses | `catalog/topics.js` | One entry per topic: `id`, `title`, `color`, `description`, `lessons`, `quiz`. |
+| Projects | `catalog/topics.js` | Same as a course, with `"kind":"project"`. Shown under Projects, never inside a path. |
+| Paths | `catalog/paths.js` | `id`, `title`, `color`, `description`, `hoursPerDay` and `courses` (a list of course ids in order). |
+| Lessons | `lessons/<course-id>.js` | Loaded only when opened. A lesson that isn't written yet shows "coming soon". |
+
+### Add a course
+
+1. Add an entry to `catalog/topics.js`:
    ```js
    {"id":"terraform","title":"Terraform","color":"#56d6ff","description":"One sentence.",
     "lessons":[["basics","What Terraform is"],["state","State and plans"],["review","Review + quiz","review"]],
     "quiz":[["Question?",["A","B","C","D"],1,"Why B is right."]]}
    ```
-2. Optionally add it to a path in `catalog/paths.js`.
-3. Write the lessons in `lessons/terraform.js` (copy the shape of `lessons/sql.js`): each lesson has `title`, `one`, `learn`, `ex`, `try` and `remember`.
-4. Push. It appears on the Courses page after Netlify redeploys.
+   - In each quiz question, the number is the index of the right answer, starting at 0.
+   - A lesson marked `"review"` shows the course cheat sheet and quiz.
+2. Optionally add its id to a path in `catalog/paths.js`.
+3. Write the lessons in `lessons/terraform.js`, copying the shape of `lessons/sql.js`:
+   ```js
+   L["terraform:basics"] = {
+     title: "What Terraform is",
+     one: "The idea in one sentence.",
+     learn: ["Point one", "Point two"],
+     ex: "code or example",
+     try: "A small task to do now.",
+     remember: ["Short fact for revision"]
+   };
+   ```
+   The `remember` lines become the cheat sheet and flashcards on the Revise page.
 
-Never change a course or lesson `id` after people start it: progress is saved under those ids.
+**Never rename a course or lesson `id` after people have started it.** Progress is saved under those ids.
 
-## Run locally
+## Data and privacy
 
-```bash
-python3 -m http.server 8000
-# open http://localhost:8000
-```
+- Each user's progress lives in one row of `study_state`, which only that user can read or change.
+- `activity` records simple events (visit, join, lesson done, quiz) for the admin panel. Users can add their own events but can't read anyone's.
+- The admin panel reads data through `admin_overview()`, which refuses anyone not listed in `admins`.
+- In local mode nothing leaves the browser.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `index.html` | The app: dashboard, plan, quizzes, courses, login and sync |
-| `catalog/topics.js` | All courses (topics) with lessons and quizzes |
+| `index.html` | The whole app: pages, styles and logic |
+| `config.js` | Supabase settings (see above) |
+| `catalog/topics.js` | Courses and projects with lessons and quizzes |
 | `catalog/paths.js` | Paths: bundles of courses per role |
 | `lessons/*.js` | Lesson content, one file per course |
-| `config.js` | Your Supabase URL and anon key |
-| `supabase/schema.sql` | Table and access rules, run once |
+| `supabase/schema.sql` | Tables, security rules and admin functions. Run once. |
 | `netlify.toml`, `vercel.json` | Hosting settings |
+
+## Contributing
+
+Lessons are the most useful contribution. Pick a course whose lessons say "coming soon", write them in simple English following the shape above, and open a pull request.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
