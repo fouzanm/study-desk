@@ -6,8 +6,7 @@ L["sql:run-order-select"] = {
  "learn": [
   "Install PostgreSQL and load a small sample shop database. Ask Claude: 'Give me a setup.sql with customers, orders and order_items for practice'.",
   "The database runs the parts in this order: <b>FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT</b>. That's why WHERE can't use names you create in SELECT.",
-  "Useful filters: <code>IN ('a','b')</code>, <code>BETWEEN</code>, <code>LIKE '%text%'</code> (<code>ILIKE</code> ignores case), <code>IS NULL</code> (never <code>= NULL</code>).",
-  "Odoo tip: every Odoo model is a table too. <code>sale.order</code> is the table <code>sale_order</code>, so the same SQL works on your client databases."
+  "Useful filters: <code>IN ('a','b')</code>, <code>BETWEEN</code>, <code>LIKE '%text%'</code> (<code>ILIKE</code> ignores case), <code>IS NULL</code> (never <code>= NULL</code>)."
  ],
  "ex": "-- 5 biggest completed orders in 2026\nSELECT id, customer_id, total\nFROM orders\nWHERE status = 'completed'\n  AND order_date >= '2026-01-01'\nORDER BY total DESC\nLIMIT 5;",
  "try": "Show all customers from Kochi or Bengaluru, sorted by name.",
