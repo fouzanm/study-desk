@@ -9,7 +9,7 @@ Live: <https://studydesk-fouzan.netlify.app>
 - **Paths:** Forward Deployed Engineer, AI Engineer, Software Engineer and Data Engineer. Each is a set of courses in a sensible order, with a start date you choose.
 - **Courses:** 25 single topics (SQL, Python, APIs, RAG, Agents, System Design, Airflow, Spark…). Join any of them on their own.
 - **Projects:** portfolio projects you can join separately (Odoo AI Agent, Integration Hub, Data Pipeline).
-- **Lessons:** short and simple: the idea in one line, what to learn, an example, a task to try and what to remember.
+- **Lessons:** every lesson in all 28 courses explains why the topic matters and walks through steps with real example code and its actual output. Each one also lists common mistakes, has practice questions with hidden answers and quick checks, and ends with points to remember. The example output comes from really running the code (Python, SQL, dbt, Spark and more), so it isn't invented.
 - **Plan:** every lesson with a done checkbox, hours studied and notes.
 - **Quizzes:** one multiple-choice quiz per course, with explanations.
 - **Revise:** a one-page cheat sheet and flashcards for each course, plus a list of your weak courses.
@@ -129,7 +129,24 @@ Reload the site and an **Admin** tab appears. Nobody can add themselves as an ad
 
 ### Full lessons (like the SQL course)
 
-Lessons can also use a richer shape: `why`, `steps` (each with `h`, `p`, `sql`, `out`, `note`), `mistakes`, `practice` (each with `q` and `sql` or `a`; answers stay hidden until opened) and `check` (quick multiple-choice questions). The SQL course is built this way, with every result table produced by running the query on PostgreSQL. See `tools/sql-course`.
+Lessons can also use a richer shape: `why`, `steps` (each with `h`, `p`, `code` or `sql`, `lang`, `out`, `note`), `mistakes`, `practice` (each with `q` and `code`/`sql` or `a`; answers stay hidden until opened), `check` (quick multiple-choice questions) and `remember`. Every course is built this way.
+
+The source of each course lives in `tools/courses/<id>.js`, and its title, lesson list and quiz live in `tools/courses/<id>.meta.js`. The builder runs every example and stores its real output:
+
+```bash
+cd tools/course-builder
+node build.js <id>      # runs the examples (Python, pytest, Java) and writes lessons/<id>.js
+node catalog.js <id>    # copies the title, lesson list and quiz into catalog/topics.js
+```
+
+- Python examples run in a temporary folder.
+- A `pre` block holds hidden setup code.
+- `files` adds files to that folder.
+- `test: true` runs the example with pytest.
+- `run: false` shows code without running it.
+- `out: {text, hand: true}` labels hand-written output as "Example output" (used for Docker, cloud and Kafka commands that need real infrastructure).
+
+The SQL course has its own builder in `tools/sql-course`, which runs every query on PostgreSQL.
 
 **Never rename a course or lesson `id` after people have started it.** Progress is saved under those ids.
 
@@ -154,7 +171,11 @@ Lessons can also use a richer shape: `why`, `steps` (each with `h`, `p`, `sql`, 
 
 ## Contributing
 
-Lessons are the most useful contribution. Pick a course whose lessons say "coming soon", write them in simple English following the shape above, and open a pull request.
+Lessons are the most useful contribution. To improve a lesson, or to add a new course:
+
+1. Edit or add `tools/courses/<id>.js` in simple English.
+2. Run the builder so every output is real.
+3. Open a pull request.
 
 ## License
 
