@@ -127,6 +127,10 @@ Reload the site and an **Admin** tab appears. Nobody can add themselves as an ad
    ```
    The `remember` lines become the cheat sheet and flashcards on the Revise page.
 
+### Full lessons (like the SQL course)
+
+Lessons can also use a richer shape: `why`, `steps` (each with `h`, `p`, `sql`, `out`, `note`), `mistakes`, `practice` (each with `q` and `sql` or `a`; answers stay hidden until opened) and `check` (quick multiple-choice questions). The SQL course is built this way, with every result table produced by running the query on PostgreSQL. See `tools/sql-course`.
+
 **Never rename a course or lesson `id` after people have started it.** Progress is saved under those ids.
 
 ## Data and privacy
