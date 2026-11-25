@@ -94,7 +94,7 @@ L["sql:indexes"] = {
   "Without an index, PostgreSQL does a <b>Seq Scan</b>: it reads the whole table. Fine for 1,000 rows, slow for 10 million.",
   "<code>EXPLAIN ANALYZE your query</code> runs the query and shows the plan and the real time. Look for 'Seq Scan' on a big table and 'Rows Removed by Filter' with a huge number. That means: add an index.",
   "For a filter like <code>WHERE customer_id = 42 AND order_date &gt;= '2026-01-01'</code>, create one index on <code>(customer_id, order_date)</code>: the '=' column first, the range column second.",
-  "Indexes are not free: every insert and update must also update the index. Add them for real slow queries, not 'just in case'. In Odoo, <code>index=True</code> on a field creates one."
+  "Indexes are not free: every insert and update must also update the index. Add them for real slow queries, not 'just in case'."
  ],
  "ex": "EXPLAIN ANALYZE\nSELECT * FROM orders\nWHERE customer_id = 42 AND order_date >= '2026-01-01';\n\nCREATE INDEX idx_orders_customer_date\n  ON orders (customer_id, order_date);",
  "out": "Before: Seq Scan ... Execution Time: 31 ms\nAfter:  Index Scan ... Execution Time: 0.1 ms",
@@ -113,7 +113,7 @@ L["sql:transactions"] = {
   "Moving stock from A to B is two updates. If the second fails, the first must be undone, or stock vanishes. <code>BEGIN; ...; COMMIT;</code> saves both. <code>ROLLBACK;</code> undoes both.",
   "<b>The last-item problem:</b> stock = 1, two users click Buy at the same second. Both read 1, both sell. That's a <b>race condition</b>.",
   "Fix 1: lock the row with <code>SELECT ... FOR UPDATE</code>; the second user waits. Fix 2: one statement that checks and changes: <code>UPDATE stock SET qty = qty - 1 WHERE id = 7 AND qty &gt; 0</code>, then check how many rows changed.",
-  "Odoo runs transactions in <b>Repeatable Read</b> and retries on conflicts. That's the 'could not serialize access' error you may have seen in logs."
+  "Stricter modes like <b>Repeatable Read</b> stop a transaction when someone else changed the same data first. You get a 'could not serialize access' error, and the app should simply try again."
  ],
  "ex": "BEGIN;\nSELECT qty FROM stock WHERE product_id = 7 FOR UPDATE;\n-- if qty > 0:\nUPDATE stock SET qty = qty - 1 WHERE product_id = 7;\nCOMMIT;",
  "try": "In two psql windows, start a transaction in each and run the FOR UPDATE query on the same row. Watch the second window wait until the first commits.",
