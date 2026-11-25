@@ -141,7 +141,9 @@ pre.code{margin:0;padding:14px 16px;border-radius:12px;background:#0b0d13;border
 .codewrap{position:relative;min-width:0}
 .codewrap .copy{position:absolute;top:8px;right:8px;font:500 11.5px var(--f-body,inherit);color:var(--muted);background:rgba(255,255,255,.04);border:1px solid var(--line2);border-radius:7px;padding:4px 9px;cursor:pointer}
 .codewrap .copy:hover{color:var(--fg)}
-@media (max-width:600px){.codewrap pre.code{padding-top:38px}}
+.codewrap .lang{position:absolute;top:13px;left:16px;font-family:var(--f-mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);pointer-events:none}
+pre.rout{margin:0;padding:12px 14px;border-radius:10px;background:rgba(255,255,255,.02);border:1px solid var(--line);font-family:var(--f-mono);font-size:12.5px;line-height:1.6;color:var(--fg);white-space:pre;overflow-x:auto}
+.codewrap pre.code{padding-top:40px}
 .rlabel{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .rtable{overflow-x:auto;border:1px solid var(--line);border-radius:10px;max-width:100%}
 .rtable table{border-collapse:collapse;font-family:var(--f-mono);font-size:12.5px;width:max-content;min-width:100%}
@@ -1018,15 +1020,16 @@ function loadTopicLessons(tid){
 const getLesson=(_plan,key)=>window.STUDY_LESSONS[key]||null;
 const isReviewDay=d=>d.type==="review";
 function lessonLink(d,label){const a=el("a",{href:`#learn/${C.id}/${d.key}`,class:"btn lbtn",text:label||"Open lesson"});return a}
-function codeBlock(text){
+function codeBlock(text,lang){
   const b=el("button",{class:"copy",type:"button",text:"Copy"});
   b.addEventListener("click",async()=>{try{await navigator.clipboard.writeText(text);b.textContent="Copied"}catch(e){const r=document.createRange();r.selectNodeContents(pre);const s=getSelection();s.removeAllRanges();s.addRange(r);b.textContent="Selected"}setTimeout(()=>b.textContent="Copy",1500)});
-  const pre=el("pre",{class:"code",text:text});return el("div",{class:"codewrap"},[pre,b]);
+  const pre=el("pre",{class:"code",text:text});return el("div",{class:"codewrap"},[pre,b,lang?el("span",{class:"lang",text:lang}):null]);
 }
 function resultBlock(o){
   if(!o)return null;
   if(o.error)return el("div",{},[el("div",{class:"rlabel",text:"Result: error"}),el("div",{class:"rerr",text:o.error})]);
   if(o.msg)return el("div",{},[el("div",{class:"rlabel",text:"Result"}),el("div",{class:"rmsg",text:o.msg})]);
+  if(o.text!=null)return el("div",{style:"display:grid;gap:6px;min-width:0"},[el("div",{class:"rlabel",text:o.label||"Output"}),el("pre",{class:"rout",text:o.text||"(no output)"})]);
   const t=el("table",{},[el("thead",{},el("tr",{},o.cols.map(c=>el("th",{text:c})))),el("tbody",{},o.rows.length?o.rows.map(r=>el("tr",{},r.map(v=>v===null?el("td",{class:"null",text:"NULL"}):el("td",{text:v})))):el("tr",{},el("td",{class:"null",colspan:String(o.cols.length),text:"(no rows)"})))]);
   const n=o.rows.length+(o.more||0);
   return el("div",{style:"display:grid;gap:6px;min-width:0"},[el("div",{class:"rlabel",text:`Result · ${n} row${n===1?"":"s"}`}),el("div",{class:"rtable"},[t,o.more?el("div",{class:"more",text:`…and ${o.more} more rows`}):null])]);
@@ -1038,11 +1041,11 @@ function renderLessonV2(L){
   out.push(el("div",{class:"lsec"},[el("h2",{text:"Learn step by step"}),...L.steps.map((st,i)=>el("div",{class:"lstep"},[
     el("h3",{},[el("span",{class:"n",text:String(i+1).padStart(2,"0")}),el("span",{html:st.h})]),
     ...(st.p||[]).map(x=>el("p",{html:x})),
-    st.sql?codeBlock(st.sql):null,resultBlock(st.out),st.note?el("p",{class:"lnote",html:st.note}):null]))]));
+    (st.code||st.sql)?codeBlock(st.code||st.sql,st.code?(st.lang||"python"):"sql"):null,resultBlock(st.out),st.note?el("p",{class:"lnote",html:st.note}):null]))]));
   if(L.mistakes&&L.mistakes.length)out.push(el("div",{class:"lsec mist"},[el("h2",{text:"Common mistakes"}),el("ul",{},L.mistakes.map(x=>el("li",{html:x})))]));
   if(L.practice&&L.practice.length)out.push(el("div",{class:"lsec"},[el("h2",{text:"Practice: try first, then open the answer"}),...L.practice.map((p,i)=>el("div",{class:"pq"},[
     el("p",{html:`<b>${i+1}.</b> ${p.q}`}),
-    el("details",{},[el("summary",{text:"Show answer"}),el("div",{},[p.sql?codeBlock(p.sql):null,resultBlock(p.out),p.a?el("p",{class:"lnote",html:p.a}):null])])]))]));
+    el("details",{},[el("summary",{text:"Show answer"}),el("div",{},[(p.code||p.sql)?codeBlock(p.code||p.sql,p.code?(p.lang||"python"):"sql"):null,resultBlock(p.out),p.a?el("p",{class:"lnote",html:p.a}):null])])]))]));
   if(L.check&&L.check.length)out.push(el("div",{class:"lsec"},[el("h2",{text:"Quick check"}),...L.check.map(([q,opts,ans,why])=>{
     const w=el("p",{class:"why",hidden:""});
     const bs=opts.map((o,i)=>{const b=el("button",{class:"qopt",type:"button",text:o});b.addEventListener("click",()=>{bs.forEach((x,j)=>{x.disabled=true;if(j===ans)x.classList.add("right")});if(i!==ans)b.classList.add("wrong");w.hidden=false;w.textContent=(i===ans?"Correct. ":"Not quite. ")+why});return b});
