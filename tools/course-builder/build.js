@@ -22,6 +22,7 @@ const lessons = require(path.join(root, "tools/courses", course + ".js"));
 let ran = 0, problems = 0;
 function runPython(item, where) {
   const lang = item.lang || "python";
+  if (item.code && lang === "java" && item.run !== false) return runJava(item, where);
   if (!item.code || lang !== "python" || item.run === false) return;
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lesson-"));
   for (const [n, c] of Object.entries(item.files || {})) {
@@ -51,6 +52,24 @@ function runPython(item, where) {
   if (item.test) text = text.replace(/ {2,}\[/g, "  [").split("\n").filter(l => !/^platform |^rootdir|^collected|^=+ (test session|warnings)/.test(l)).join("\n").trim();
   item.out = failed && item.expectError && !item.test ? { error: text } : { text };
   delete item.pre; delete item.files;
+  fs.rmSync(dir, { recursive: true, force: true });
+}
+
+function runJava(item, where) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lesson-java-"));
+  fs.writeFileSync(path.join(dir, "Main.java"), item.code + "\n");
+  let text, failed = false;
+  try {
+    text = execFileSync("java", ["-Dstdout.encoding=UTF-8", "-Dfile.encoding=UTF-8", "Main.java"], { cwd: dir, timeout: 60000, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  } catch (e) {
+    failed = true;
+    const err = (e.stderr || "").split("\n").filter(l => l && !l.startsWith("Picked up JAVA_TOOL_OPTIONS"));
+    text = (e.stdout || "") + (err.find(l => /Exception|error:/.test(l)) || err[0] || "");
+  }
+  ran++;
+  if (failed && !item.expectError) { console.error("JAVA FAILED in", where, "\n", text); problems++; }
+  if (!failed && item.expectError) { console.error("EXPECTED AN ERROR in", where); problems++; }
+  item.out = failed ? { error: text.trim() } : { text: text.replace(/\s+$/, "") };
   fs.rmSync(dir, { recursive: true, force: true });
 }
 
