@@ -39,8 +39,8 @@ function runPython(item, where) {
     const err = (e.stdout || "") + (e.stderr || "");
     if (item.test) text = err;
     else {
-      const lines = err.trim().split("\n");
-      text = (e.stdout || "") + lines[lines.length - 1];
+      const errLines = (e.stderr || "").trim().split("\n").filter(Boolean);
+      text = (e.stdout || "") + (errLines.length ? errLines[errLines.length - 1] : "");
     }
   }
   ran++;

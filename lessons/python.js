@@ -1431,7 +1431,7 @@ L["python:pytest"] = {
    "code": "def add_tax(amount, rate=0.18):\n    return round(amount * (1 + rate), 2)\n\ndef test_add_tax_default():\n    assert add_tax(100) == 118.0\n\ndef test_add_tax_custom_rate():\n    assert add_tax(200, rate=0.05) == 210.0",
    "test": true,
    "out": {
-    "text": "..  [100%]\n2 passed in 0.00s"
+    "text": "..  [100%]\n2 passed in 0.01s"
    }
   },
   {

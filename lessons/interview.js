@@ -330,7 +330,7 @@ L["interview:ai-tools"] = {
    "expectError": true,
    "note": "<code>items[-0:]</code> is <code>items[0:]</code>, the whole list. The edge case is exactly where tests earn their keep.",
    "out": {
-    "text": ".F  [100%]\n=================================== FAILURES ===================================\n_______________________________ test_zero_items ________________________________\n\n    def test_zero_items():\n>       assert last_n([1, 2, 3], 0) == []      # items[-0:] returns the whole list!\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       assert [1, 2, 3] == []\nE         \nE         Left contains 3 more items, first extra item: 1\nE         Use -v to get more diff\n\ntest_example.py:8: AssertionError\n=========================== short test summary info ============================\nFAILED test_example.py::test_zero_items - assert [1, 2, 3] == []\n1 failed, 1 passed in 0.01s"
+    "text": ".F  [100%]\n=================================== FAILURES ===================================\n_______________________________ test_zero_items ________________________________\n\n    def test_zero_items():\n>       assert last_n([1, 2, 3], 0) == []      # items[-0:] returns the whole list!\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nE       assert [1, 2, 3] == []\nE         \nE         Left contains 3 more items, first extra item: 1\nE         Use -v to get more diff\n\ntest_example.py:8: AssertionError\n=========================== short test summary info ============================\nFAILED test_example.py::test_zero_items - assert [1, 2, 3] == []\n1 failed, 1 passed in 0.02s"
    }
   },
   {
@@ -359,7 +359,7 @@ L["interview:ai-tools"] = {
    "code": "def last_n(items, n):\n    return items[-n:] if n > 0 else []\n\ndef test_last_two():\n    assert last_n([1, 2, 3], 2) == [2, 3]\n\ndef test_zero_items():\n    assert last_n([1, 2, 3], 0) == []",
    "test": true,
    "out": {
-    "text": "..  [100%]\n2 passed in 0.01s"
+    "text": "..  [100%]\n2 passed in 0.00s"
    }
   },
   {
@@ -430,7 +430,7 @@ L["interview:mock-tech"] = {
    "code": "def repeated_ids(ids: list[str]) -> list[str]:\n    seen, reported, out = set(), set(), []\n    for i in ids:\n        if i in seen and i not in reported:\n            out.append(i)\n            reported.add(i)\n        seen.add(i)\n    return out\n\ndef test_basic():\n    assert repeated_ids([\"a\", \"b\", \"a\", \"c\", \"b\", \"a\"]) == [\"a\", \"b\"]\n\ndef test_empty_and_unique():\n    assert repeated_ids([]) == []\n    assert repeated_ids([\"x\", \"y\"]) == []",
    "test": true,
    "out": {
-    "text": "..  [100%]\n2 passed in 0.01s"
+    "text": "..  [100%]\n2 passed in 0.00s"
    }
   },
   {
@@ -445,7 +445,7 @@ L["interview:mock-tech"] = {
    ],
    "code": "import time\n\ndef has_duplicate_slow(xs):                 # compare every pair: O(n^2)\n    return any(xs[i] == xs[j] for i in range(len(xs)) for j in range(i + 1, len(xs)))\n\ndef has_duplicate_fast(xs):                 # set: O(n)\n    return len(set(xs)) != len(xs)\n\ndata = list(range(3_000))\nfor f in (has_duplicate_slow, has_duplicate_fast):\n    t = time.perf_counter()\n    f(data)\n    print(f\"{f.__name__:20} {(time.perf_counter() - t) * 1000:8.1f} ms\")",
    "out": {
-    "text": "has_duplicate_slow      219.7 ms\nhas_duplicate_fast        0.1 ms"
+    "text": "has_duplicate_slow      249.1 ms\nhas_duplicate_fast        0.2 ms"
    }
   },
   {

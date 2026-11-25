@@ -444,7 +444,7 @@ L["integration:failing-api-tests"] = {
    "code": "import httpx, pytest\n\ndef fetch_order(client, order_id):\n    r = client.get(f\"/orders/{order_id}\", timeout=5)\n    if r.status_code == 404:\n        return {\"found\": False}\n    r.raise_for_status()\n    data = r.json()\n    return {\"found\": True, \"id\": data[\"id\"], \"status\": data[\"status\"]}\n\ndef client_returning(handler):\n    return httpx.Client(base_url=\"https://erp.example.com\", transport=httpx.MockTransport(handler))\n\ndef test_not_found_is_handled():\n    c = client_returning(lambda req: httpx.Response(404))\n    assert fetch_order(c, 9) == {\"found\": False}\n\ndef test_server_error_raises():\n    c = client_returning(lambda req: httpx.Response(503))\n    with pytest.raises(httpx.HTTPStatusError):\n        fetch_order(c, 6)\n\ndef test_timeout_raises():\n    def slow(req):\n        raise httpx.ReadTimeout(\"timed out\", request=req)\n    with pytest.raises(httpx.TimeoutException):\n        fetch_order(client_returning(slow), 6)\n\ndef test_missing_field_is_noticed():\n    c = client_returning(lambda req: httpx.Response(200, json={\"id\": 6}))\n    with pytest.raises(KeyError):\n        fetch_order(c, 6)\n\ndef test_html_error_page_instead_of_json():\n    c = client_returning(lambda req: httpx.Response(200, text=\"<html>Gateway error</html>\"))\n    with pytest.raises(ValueError):\n        fetch_order(c, 6)",
    "test": true,
    "out": {
-    "text": ".....  [100%]\n5 passed in 0.06s"
+    "text": ".....  [100%]\n5 passed in 0.05s"
    }
   },
   {
@@ -477,7 +477,7 @@ L["integration:failing-api-tests"] = {
    "code": "import httpx\n\ndef get(client, url, sleep):\n    r = client.get(url)\n    if r.status_code == 429:\n        sleep(float(r.headers.get(\"Retry-After\", 1)))\n        r = client.get(url)\n    return r\n\ndef test_respects_retry_after():\n    responses = iter([httpx.Response(429, headers={\"Retry-After\": \"7\"}), httpx.Response(200)])\n    client = httpx.Client(base_url=\"https://x.test\", transport=httpx.MockTransport(lambda req: next(responses)))\n    waited = []\n    assert get(client, \"/a\", sleep=waited.append).status_code == 200\n    assert waited == [7.0]",
    "test": true,
    "out": {
-    "text": ".  [100%]\n1 passed in 0.04s"
+    "text": ".  [100%]\n1 passed in 0.05s"
    }
   },
   {
