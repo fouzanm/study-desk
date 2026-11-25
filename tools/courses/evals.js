@@ -308,7 +308,7 @@ for m in PRICES:
     code: `import statistics
 
 latencies_ms = [820, 790, 910, 850, 4300, 870, 800, 3900, 880, 840, 860, 830, 900, 810, 5200, 850, 870, 820, 890, 860]
-q = statistics.quantiles(latencies_ms, n=100)
+q = statistics.quantiles(latencies_ms, n=100, method="inclusive")
 print(f"mean {statistics.mean(latencies_ms):.0f} ms, p50 {statistics.median(latencies_ms):.0f} ms, p95 {q[94]:.0f} ms")` },
   { h: "Ways to cut cost and latency",
     p: ["<b>Smaller model</b> for easy steps (classification, routing), big model only where needed. <b>Shorter prompts</b>: trim instructions, fewer examples, fewer retrieved chunks. <b>Limit output</b> with <code>max_tokens</code> and “answer in 2 sentences”. <b>Prompt caching</b> for stable prefixes. <b>Batch APIs</b> for non-urgent jobs (often ~50% cheaper). <b>Parallel calls</b> instead of one after another. <b>Streaming</b> so users see words immediately. <b>Cache answers</b> to repeated questions."] },

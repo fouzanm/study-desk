@@ -359,9 +359,9 @@ L["evals:cost-latency"] = {
    "p": [
     "Average latency hides slow outliers. <b>p95</b> = 95% of requests are faster than this. Users feel the slow ones."
    ],
-   "code": "import statistics\n\nlatencies_ms = [820, 790, 910, 850, 4300, 870, 800, 3900, 880, 840, 860, 830, 900, 810, 5200, 850, 870, 820, 890, 860]\nq = statistics.quantiles(latencies_ms, n=100)\nprint(f\"mean {statistics.mean(latencies_ms):.0f} ms, p50 {statistics.median(latencies_ms):.0f} ms, p95 {q[94]:.0f} ms\")",
+   "code": "import statistics\n\nlatencies_ms = [820, 790, 910, 850, 4300, 870, 800, 3900, 880, 840, 860, 830, 900, 810, 5200, 850, 870, 820, 890, 860]\nq = statistics.quantiles(latencies_ms, n=100, method=\"inclusive\")\nprint(f\"mean {statistics.mean(latencies_ms):.0f} ms, p50 {statistics.median(latencies_ms):.0f} ms, p95 {q[94]:.0f} ms\")",
    "out": {
-    "text": "mean 1392 ms, p50 860 ms, p95 5155 ms"
+    "text": "mean 1392 ms, p50 860 ms, p95 4345 ms"
    }
   },
   {
